@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办与专注自习室</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+     <div class="room-bar">
+         <span id="room-status">未连接</span> |
+         <span id="room-info"></span>
+         <button id="join-btn" class="btn-room">加入房间</button>
+         <button id="leave-btn" class="btn-room" style="display:none;">离开房间</button>
+     </div>
+    <div class="container">
+         <header>
+             <h1>✅ 待办事项 & ⏳ 专注</h1>
+             <p>管理你的任务，提高工作效率，与同伴一起学习</p>
+         </header>
+
+        <div class="main-content">
+            <!-- Todo Section -->
+            <div class="todo-section">
+                 <div class="card todo-stats" id="todo-stats">
+                     <span class="icon">✔️</span> 已完成 0 / 0 项任务
+                 </div>
+                <div class="card">
+                    <h3><span class="icon">➕</span> 添加新任务</h3>
+                    <form id="add-task-form">
+                        <input type="text" id="task-input" placeholder="输入新任务..." aria-label="新任务内容">
+                        <div class="priority-options">
+                            优先级:
+                            <button type="button" class="priority-btn" data-priority="low">低</button>
+                            <button type="button" class="priority-btn active" data-priority="medium">中</button>
+                            <button type="button" class="priority-btn" data-priority="high">高</button>
+                        </div>
+                         <button type="submit" class="btn btn-add" id="add-task-btn">＋ 添加任务</button>
+                    </form>
+                </div>
+                 <div class="card">
+                      <ul id="task-list"></ul>
+                      <div id="empty-state" class="empty-state"><div>📋</div>还没有任务，添加一个开始吧!</div>
+                 </div>
+            </div>
+
+            <!-- Pomodoro Section -->
+             <div class="pomodoro-section-wrapper">
+                <div class="pomodoro-section card">
+                     <div class="timer-header">
+                        <h3><span class="icon">⏳</span> <span id="timer-mode-title">专注时间</span> </h3>
+                        <button class="settings-btn" id="settings-open-btn" title="设置">⚙️</button>
+                    </div>
+                    <div class="timer-status">已完成 <span id="cycle-count">0</span> 个循环</div>
+                    <div id="timer-display">25:00</div>
+                    <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill"></div></div>
+                    <div class="timer-controls">
+                        <button class="btn btn-primary btn-start" id="start-pause-btn">▶ 开始</button>
+                        <button class="btn" id="reset-btn">🔄 重置</button>
+                        <button class="btn" id="skip-btn">☕ 休息</button>
+                    </div>
+                    <div class="timer-info">专注: <span id="info-work">25</span>分 | 休息: <span id="info-break">5</span>分</div>
+                </div>
+                  <!-- Study Room Section -->
+                 <div class="card room-panel" id="room-panel" style="display:none;">
+                      <h3><span class="icon">👥</span> 房间成员 <span id="user-count"></span></h3>
+                       <ul id="user-list"><li>等待连接...</li></ul>
+                       <h3><span class="icon">💬</span> 聊天</h3>
+                        <div id="chat-box"></div>
+                        <form id="chat-form">
+                           <input type="text" id="chat-input" placeholder="输入消息..." autocomplete="off">
+                           <button type="submit" class="btn btn-primary">发送</button>
+                        </form>
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+      <div id="settings-modal" class="settings-modal">
+        <div class="settings-content">
+             <h3><span class="icon">⚙️</span> 设置</h3>
+             <label for="work-duration">专注时长 (分钟):</label>
+             <input type="number" id="work-duration" min="1" value="25">
+             <label for="break-duration">休息时长 (分钟):</label>
+             <input type="number" id="break-duration" min="1" value="5">
+             <label>主题颜色:</label>
+              <div class="theme-selector">
+                 <span class="theme-default active" data-theme="default" title="默认橘色"></span>
+                 <span class="theme-blue" data-theme="blue" title="天空蓝"></span>
+                  <span class="theme-green" data-theme="green" title="清新绿"></span>
+                  <span class="theme-purple" data-theme="purple" title="丁香紫"></span>
+              </div>
+             <div class="settings-actions">
+                 <button class="btn" id="settings-cancel-btn">取消</button>
+                <button class="btn btn-primary" id="settings-save-btn">保存</button>
+            </div>
+        </div>
+     </div>
+    
+    <!-- Join Room Modal -->
+      <div id="join-modal" class="settings-modal">
+         <div class="settings-content">
+              <h3><span class="icon">🚪</span> 加入/创建房间</h3>
+               <form id="join-form">
+                 <label for="user-name">你的昵称:</label>
+                  <input type="text" id="user-name" required maxlength="20" placeholder="输入昵称">
+                  <label for="room-pin">房间PIN码:</label>
+                  <input type="text" id="room-pin" pattern="\\d{4,8}" required maxlength="8" placeholder="4-8位数字">
+                   <div class="settings-actions">
+                      <button type="button" class="btn" id="join-cancel-btn">取消</button>
+                     <button type="submit" class="btn btn-primary">进入</button>
+                   </div>
+              </form>
+         </div>
+      </div>
+
+    <!-- Audio -->
+    <audio id="work-end-sound" src="./audio/work-end.mp3" preload="auto"></audio>
+    <audio id="break-end-sound" src="./audio/break-end.mp3" preload="auto"></audio>
+
+    <script src="client.js"></script>
+</body>
+</html>
