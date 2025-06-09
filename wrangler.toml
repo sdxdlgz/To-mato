@@ -1,4 +1,4 @@
-# wrangler.toml (Pages 项目的最终正确版本)
+# wrangler.toml (最终的、最简化的正确版本)
 
 name = "to-study"
 pages_build_output_dir = "public"
@@ -7,12 +7,9 @@ compatibility_date = "2024-05-02"
 compatibility_flags = [ "nodejs_compat" ]
 
 # === Durable Objects 配置 ===
+# 我们不再需要 script_name，因为 DO 类就在这个项目里
+# 构建系统会自动在项目源文件中寻找 "StudyRoom" 这个类
 [durable_objects]
 bindings = [
-  # 关键改动在这里：
-  # 1. 添加了 script_name，值就是你的项目名 "to-study"
-  # 2. 我们将删除下面所有的 [[migrations]] 部分
-  { name = "STUDY_ROOM_DO", class_name = "StudyRoom", script_name = "to-study" }
+  { name = "STUDY_ROOM_DO", class_name = "StudyRoom" }
 ]
-
-# (注意：下面原有的 [[migrations]] 整个部分都已被删除)
