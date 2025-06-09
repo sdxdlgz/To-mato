@@ -1,0 +1,20 @@
+# wrangler.toml
+
+name = "to-study" # 你的项目名称
+pages_build_output_dir = "public" # 明确指定静态文件目录
+
+# === 兼容性设置 ===
+# 把你在 UI 上设置的兼容性日期和标志移到这里
+compatibility_date = "2024-05-02" # 使用一个较新的日期
+compatibility_flags = [ "nodejs_compat" ]
+
+# === Durable Objects 配置 ===
+# 这是告诉 Cloudflare 如何处理你的 DO 的核心部分
+[durable_objects]
+bindings = [
+  { name = "STUDY_ROOM_DO", class_name = "StudyRoom" }
+]
+
+[[migrations]]
+tag = "v1" # 一个版本的标识符，可以随便写
+new_classes = [ "StudyRoom" ] # 列出这个版本包含的 DO 类名
