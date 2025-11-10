@@ -19,6 +19,10 @@ let focusHistory = []; // 专注历史记录
 let currentTheme = 'blue-grey';
 let currentUiMode = 'light'; // 'light' or 'dark'
 let calendar = null; // 日历实例
+// 新增: 正计时
+let stopwatchTime = 0; // 秒
+let stopwatchInterval = null;
+let stopwatchRunning = false;
 
 // --- DOM Elements ---
 const taskForm = document.getElementById('add-task-form');
@@ -61,6 +65,10 @@ const calendarViewMode = document.querySelector('.calendar-view-mode');
 const targetDateInput = document.getElementById('target-date');
 const countdownDisplay = document.getElementById('countdown-display');
 const targetTitleInput = document.getElementById('target-title');
+const stopwatchDisplay = document.getElementById('stopwatch-display');
+const stopwatchStartBtn = document.getElementById('stopwatch-start-btn');
+const stopwatchResetBtn = document.getElementById('stopwatch-reset-btn');
+const shareBtn = document.getElementById('share-btn');
 
 
 // --- Helper Functions ---
@@ -127,6 +135,70 @@ const resetDailyFocusTime = () => {
         focusHistory = focusHistory.filter(session => session.date !== getTodayDateString());
         saveFocusHistory();
         updateDailyFocusDisplay();
+    }
+};
+
+// --- Stopwatch Functions ---
+const formatStopwatchTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
+    const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+    const secs = (seconds % 60).toString().padStart(2, '0');
+    return `${hours}:${minutes}:${secs}`;
+};
+
+const updateStopwatchDisplay = () => {
+    stopwatchDisplay.textContent = formatStopwatchTime(stopwatchTime);
+};
+
+const toggleStopwatch = () => {
+    if (stopwatchRunning) {
+        clearInterval(stopwatchInterval);
+        stopwatchStartBtn.textContent = '▶ 继续';
+        stopwatchRunning = false;
+    } else {
+        stopwatchInterval = setInterval(() => {
+            stopwatchTime++;
+            updateStopwatchDisplay();
+        }, 1000);
+        stopwatchStartBtn.textContent = '⏸ 暂停';
+        stopwatchRunning = true;
+    }
+};
+
+const resetStopwatch = () => {
+    clearInterval(stopwatchInterval);
+    stopwatchTime = 0;
+    stopwatchRunning = false;
+    stopwatchStartBtn.textContent = '▶ 开始';
+    updateStopwatchDisplay();
+};
+
+// --- Share Functions ---
+const shareProgress = () => {
+    const completedTasks = tasks.filter(t => t.completed).length;
+    const totalTasks = tasks.length;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const shareText = `🍅 To-mato 今日成果
+
+⏱️ 专注时长: ${formatFocusTime(dailyFocusTime)}
+🔄 完成循环: ${completedCycles} 个
+✅ 完成任务: ${completedTasks}/${totalTasks} (${completionRate}%)
+
+继续加油！💪
+https://sdxdlgz.github.io/To-mato/`;
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'To-mato 今日成果',
+            text: shareText
+        }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(shareText).then(() => {
+            alert('成果已复制到剪贴板！');
+        }).catch(() => {
+            alert(shareText);
+        });
     }
 };
 
@@ -1138,6 +1210,9 @@ document.addEventListener('DOMContentLoaded', () => {
    });
    targetDateInput.addEventListener('change', updateCountdown);
    targetTitleInput.addEventListener('input', updateCountdown);
+   stopwatchStartBtn.addEventListener('click', toggleStopwatch);
+   stopwatchResetBtn.addEventListener('click', resetStopwatch);
+   shareBtn.addEventListener('click', shareProgress);
 });
 taskForm.addEventListener('submit', addTask);
  taskInput.addEventListener('input', (e) => { addTaskBtn.disabled = e.target.value.trim() === ''; });

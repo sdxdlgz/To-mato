@@ -27,6 +27,7 @@
                     <div class="focus-time-status">
                         今日已专注 <span id="daily-focus-time">0分钟</span>
                         <button class="btn-small" id="reset-focus-time-btn" title="重置今日专注时间">🗑️</button>
+                        <button class="btn-small btn-share" id="share-btn" title="分享成果">📤</button>
                     </div>
                     <div id="timer-display">25:00</div>
                     <div class="timer-controls">
@@ -63,6 +64,14 @@
                         <label for="target-date">选择一个未来的日期:</label>
                         <input type="date" id="target-date">
                         <div id="countdown-display"></div>
+                    </div>
+                </div>
+                <div class="card stopwatch-section">
+                    <h3><span class="icon">⏱️</span> 正计时</h3>
+                    <div id="stopwatch-display">00:00:00</div>
+                    <div class="stopwatch-controls">
+                        <button class="btn btn-primary" id="stopwatch-start-btn">▶ 开始</button>
+                        <button class="btn" id="stopwatch-reset-btn">🔄 重置</button>
                     </div>
                 </div>
             </div>
@@ -128,7 +137,7 @@
                     <label for="work-duration-slider">专注时长 (分钟):</label>
                     <span id="work-duration-value">25</span>
                 </div>
-                <input type="range" id="work-duration-slider" min="1" max="90" value="25">
+                <input type="range" id="work-duration-slider" min="1" max="180" value="25">
              </div>
              <div class="slider-container">
                 <div class="slider-label">
