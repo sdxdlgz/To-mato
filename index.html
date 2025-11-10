@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-mato</title>
+    <link rel="icon" href="https://em-content.zobj.net/source/animated-noto-color-emoji/356/baby-chick_1f424.gif" type="image/gif">
+    <link rel="stylesheet" type="text/css" href="https://uicdn.toast.com/tui-time-picker/latest/tui-time-picker.css">
+    <link rel="stylesheet" type="text/css" href="https://uicdn.toast.com/tui-date-picker/latest/tui-date-picker.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-mode="light" data-theme="blue-grey">
+    <div class="container">
+         <header>
+             <h1>To-mato</h1>
+             <p>管理你的任务，用番茄钟提高效率，记录你的每一天</p>
+         </header>
+
+        <div class="main-content">
+            <div class="left-column">
+                <div class="pomodoro-section card">
+                     <div class="timer-header">
+                        <h3><span class="icon">⏳</span> <span id="timer-mode-title">专注时间</span> </h3>
+                        <button class="settings-btn" id="settings-open-btn" title="设置">⚙️</button>
+                    </div>
+                    <div class="timer-status">已完成 <span id="cycle-count">0</span> 个循环</div>
+                    <div class="focus-time-status">
+                        今日已专注 <span id="daily-focus-time">0分钟</span>
+                        <button class="btn-small" id="reset-focus-time-btn" title="重置今日专注时间">🗑️</button>
+                        <button class="btn-small btn-share" id="share-btn" title="分享成果">📤</button>
+                    </div>
+                    <div id="timer-display">25:00</div>
+                    <div class="timer-controls">
+                        <button class="btn btn-primary" id="start-pause-btn">▶ 开始</button>
+                        <div class="sub-controls">
+                            <button class="btn" id="reset-btn">🔄 重置</button>
+                            <button class="btn" id="skip-btn">☕ 休息</button>
+                        </div>
+                    </div>
+                    <div class="timer-info">专注: <span id="info-work">25</span>分 | 休息: <span id="info-break">5</span>分</div>
+                </div>
+                <div class="card">
+                    <h3><span class="icon">➕</span> 添加新任务</h3>
+                    <form id="add-task-form">
+                        <input type="text" id="task-input" placeholder="输入新任务..." aria-label="新任务内容">
+                        <div class="priority-options">
+                            优先级:
+                            <button type="button" class="priority-btn" data-priority="low">低</button>
+                            <button type="button" class="priority-btn active" data-priority="medium">中</button>
+                            <button type="button" class="priority-btn" data-priority="high">高</button>
+                        </div>
+                         <button type="submit" class="btn btn-add" id="add-task-btn">＋ 添加任务</button>
+                    </form>
+                </div>
+                 <div class="card">
+                      <ul id="task-list"></ul>
+                      <div id="empty-state" class="empty-state"><div>📋</div>还没有任务，添加一个开始吧!</div>
+                 </div>
+                 <div class="card countdown-section">
+                    <h3><span class="icon">🎯</span> 目标日倒计时</h3>
+                    <div class="countdown-timer">
+                        <label for="target-title">目标名称:</label>
+                        <input type="text" id="target-title" placeholder="例如: 高考">
+                        <label for="target-date">选择一个未来的日期:</label>
+                        <input type="date" id="target-date">
+                        <div id="countdown-display"></div>
+                    </div>
+                </div>
+                <div class="card stopwatch-section">
+                    <h3><span class="icon">⏱️</span> 正计时</h3>
+                    <div id="stopwatch-display">00:00:00</div>
+                    <div class="stopwatch-controls">
+                        <button class="btn btn-primary" id="stopwatch-start-btn">▶ 开始</button>
+                        <button class="btn" id="stopwatch-reset-btn">🔄 重置</button>
+                    </div>
+                </div>
+            </div>
+
+             <div class="right-column">
+                <div class="card">
+                    <div class="completion-circle-container">
+                        <svg class="completion-circle-svg" viewBox="0 0 120 120">
+                            <circle class="completion-circle-bg" cx="60" cy="60" r="54"></circle>
+                            <circle id="completion-circle" class="completion-circle-progress" cx="60" cy="60" r="54"></circle>
+                        </svg>
+                        <div class="completion-text-container">
+                            <span id="completion-percentage">0%</span>
+                            <span class="completion-label">已完成</span>
+                        </div>
+                    </div>
+                 </div>
+                 <div class="card calendar-section">
+                    <div class="calendar-controls">
+                        <div class="calendar-nav">
+                            <button id="calendar-prev">‹</button>
+                            <button id="calendar-today">今天</button>
+                            <button id="calendar-next">›</button>
+                        </div>
+                        <span id="calendar-title"></span>
+                        <div class="calendar-view-mode">
+                             <span class="view-label">今日已办</span>
+                        </div>
+                    </div>
+                    <div id="calendar"></div>
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <div class="theme-fab-container">
+        <div class="theme-panel" id="theme-panel">
+            <label>主题颜色:</label>
+            <div class="theme-selector" id="theme-selector-panel">
+                <span class="theme-blue-grey active" data-theme="blue-grey" title="灰蓝"></span>
+                <span class="theme-green-grey" data-theme="green-grey" title="灰绿"></span>
+                <span class="theme-dusty-rose" data-theme="dusty-rose" title="尘粉"></span>
+                <span class="theme-ochre" data-theme="ochre" title="赭石"></span>
+                <span class="theme-haze-blue" data-theme="haze-blue" title="雾霾蓝"></span>
+                <span class="theme-olive" data-theme="olive" title="橄榄绿"></span>
+            </div>
+            <label class="dark-mode-toggle">
+                <span>暗黑模式</span>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="dark-mode-checkbox">
+                    <span class="slider"></span>
+                </div>
+            </label>
+        </div>
+        <button id="theme-fab-btn" title="主题设置">🎨</button>
+    </div>
+
+      <div id="settings-modal" class="settings-modal">
+        <div class="settings-content">
+             <h3><span class="icon">⚙️</span> 番茄钟设置</h3>
+             <div class="slider-container">
+                <div class="slider-label">
+                    <label for="work-duration-slider">专注时长 (分钟):</label>
+                    <span id="work-duration-value">25</span>
+                </div>
+                <input type="range" id="work-duration-slider" min="1" max="180" value="25">
+             </div>
+             <div class="slider-container">
+                <div class="slider-label">
+                    <label for="break-duration-slider">休息时长 (分钟):</label>
+                    <span id="break-duration-value">5</span>
+                </div>
+                <input type="range" id="break-duration-slider" min="1" max="30" value="5">
+             </div>
+             <div class="settings-actions">
+                 <button class="btn" id="settings-cancel-btn">取消</button>
+                <button class="btn btn-primary" id="settings-save-btn">保存</button>
+            </div>
+        </div>
+     </div>
+    
+    <audio id="work-end-sound" src="./audio/work-end.mp3" preload="auto"></audio>
+    <audio id="break-end-sound" src="./audio/break-end.mp3" preload="auto"></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://uicdn.toast.com/tui.code-snippet/v1.5.2/tui-code-snippet.min.js"></script>
+    <script src="https://uicdn.toast.com/tui-time-picker/v2.0.3/tui-time-picker.min.js"></script>
+    <script src="https://uicdn.toast.com/tui-date-picker/v4.0.3/tui-date-picker.min.js"></script>
+    <script src="https://uicdn.toast.com/tui-calendar/latest/tui-calendar.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
