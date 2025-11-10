@@ -18,6 +18,7 @@ let focusHistory = []; // 专注历史记录
 // 新增: UI状态, 并更新默认主题
 let currentTheme = 'blue-grey';
 let currentUiMode = 'light'; // 'light' or 'dark'
+let currentLang = 'zh'; // 'zh' or 'en'
 let calendar = null; // 日历实例
 // 新增: 正计时
 let stopwatchTime = 0; // 秒
@@ -69,6 +70,7 @@ const stopwatchDisplay = document.getElementById('stopwatch-display');
 const stopwatchStartBtn = document.getElementById('stopwatch-start-btn');
 const stopwatchResetBtn = document.getElementById('stopwatch-reset-btn');
 const shareBtn = document.getElementById('share-btn');
+const langCheckbox = document.getElementById('lang-checkbox');
 
 
 // --- Helper Functions ---
@@ -104,10 +106,17 @@ const playSound = (audioEl) => {
 const formatFocusTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-        return `${hours}小时${minutes}分钟`;
+    if (currentLang === 'zh') {
+        if (hours > 0) {
+            return `${hours}小时${minutes}分钟`;
+        }
+        return `${minutes}分钟`;
+    } else {
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
     }
-    return `${minutes}分钟`;
 };
 
 const getTodayDateString = () => {
@@ -130,7 +139,8 @@ const updateDailyFocusDisplay = () => {
 };
 
 const resetDailyFocusTime = () => {
-    if (confirm('确定要重置今日专注时间吗？这将清除今天的所有专注记录。')) {
+    const msg = currentLang === 'zh' ? '确定要重置今日专注时间吗？这将清除今天的所有专注记录。' : 'Reset today\'s focus time? This will clear all focus records for today.';
+    if (confirm(msg)) {
         dailyFocusTime = 0;
         focusHistory = focusHistory.filter(session => session.date !== getTodayDateString());
         saveFocusHistory();
@@ -153,14 +163,14 @@ const updateStopwatchDisplay = () => {
 const toggleStopwatch = () => {
     if (stopwatchRunning) {
         clearInterval(stopwatchInterval);
-        stopwatchStartBtn.textContent = '▶ 继续';
+        stopwatchStartBtn.textContent = currentLang === 'zh' ? '▶ 继续' : '▶ Resume';
         stopwatchRunning = false;
     } else {
         stopwatchInterval = setInterval(() => {
             stopwatchTime++;
             updateStopwatchDisplay();
         }, 1000);
-        stopwatchStartBtn.textContent = '⏸ 暂停';
+        stopwatchStartBtn.textContent = currentLang === 'zh' ? '⏸ 暂停' : '⏸ Pause';
         stopwatchRunning = true;
     }
 };
@@ -169,7 +179,7 @@ const resetStopwatch = () => {
     clearInterval(stopwatchInterval);
     stopwatchTime = 0;
     stopwatchRunning = false;
-    stopwatchStartBtn.textContent = '▶ 开始';
+    stopwatchStartBtn.textContent = currentLang === 'zh' ? '▶ 开始' : '▶ Start';
     updateStopwatchDisplay();
 };
 
@@ -179,23 +189,32 @@ const shareProgress = () => {
     const totalTasks = tasks.length;
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-    const shareText = `🍅 To-mato 今日成果
+    const shareText = currentLang === 'zh'
+        ? `🍅 To-mato 今日成果
 
 ⏱️ 专注时长: ${formatFocusTime(dailyFocusTime)}
 🔄 完成循环: ${completedCycles} 个
 ✅ 完成任务: ${completedTasks}/${totalTasks} (${completionRate}%)
 
 继续加油！💪
+https://sdxdlgz.github.io/To-mato/`
+        : `🍅 To-mato Daily Progress
+
+⏱️ Focus Time: ${formatFocusTime(dailyFocusTime)}
+🔄 Cycles: ${completedCycles}
+✅ Tasks: ${completedTasks}/${totalTasks} (${completionRate}%)
+
+Keep going! 💪
 https://sdxdlgz.github.io/To-mato/`;
 
     if (navigator.share) {
         navigator.share({
-            title: 'To-mato 今日成果',
+            title: currentLang === 'zh' ? 'To-mato 今日成果' : 'To-mato Daily Progress',
             text: shareText
         }).catch(() => {});
     } else {
         navigator.clipboard.writeText(shareText).then(() => {
-            alert('成果已复制到剪贴板！');
+            alert(currentLang === 'zh' ? '成果已复制到剪贴板！' : 'Copied to clipboard!');
         }).catch(() => {
             alert(shareText);
         });
@@ -218,7 +237,7 @@ const updateCountdown = () => {
     saveCountdownData();
 
     if (!targetDateValue) {
-        countdownDisplay.innerHTML = '请选择一个日期';
+        countdownDisplay.innerHTML = currentLang === 'zh' ? '请选择一个日期' : 'Please select a date';
         return;
     }
 
@@ -231,14 +250,16 @@ const updateCountdown = () => {
     const diffTime = targetDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const titleText = targetTitle ? escapeHTML(targetTitle) : '目标日';
+    const titleText = targetTitle ? escapeHTML(targetTitle) : (currentLang === 'zh' ? '目标日' : 'Target Day');
 
     if (diffDays < 0) {
-        countdownDisplay.innerHTML = `“${titleText}”已经过去了!`;
+        countdownDisplay.innerHTML = currentLang === 'zh' ? `"${titleText}"已经过去了!` : `"${titleText}" has passed!`;
     } else if (diffDays === 0) {
-        countdownDisplay.innerHTML = `“${titleText}”就是今天！🎉`;
+        countdownDisplay.innerHTML = currentLang === 'zh' ? `"${titleText}"就是今天！🎉` : `"${titleText}" is today! 🎉`;
     } else {
-        countdownDisplay.innerHTML = `距离“${titleText}”还有 <span class="countdown-days">${diffDays}</span> 天`;
+        countdownDisplay.innerHTML = currentLang === 'zh'
+            ? `距离"${titleText}"还有 <span class="countdown-days">${diffDays}</span> 天`
+            : `<span class="countdown-days">${diffDays}</span> days until "${titleText}"`;
     }
 };
 
@@ -409,30 +430,31 @@ const saveTimerSettingsOnly = () => {
    saveFocusHistory();
 };
 const updateDisplay = () => {
+    const t = translations[currentLang];
     timerDisplay.textContent = formatTime(timeLeft);
     cycleCountEl.textContent = completedCycles;
-    timerModeTitleEl.textContent = currentMode === 'work' ? '专注时间 ⏳' : '休息一下 ☕';
-    skipBtn.textContent = currentMode === 'work' ? '☕ 休息' : '👩‍💻 工作' ;
+    timerModeTitleEl.textContent = currentMode === 'work' ? t.focusTime : t.breakTime;
+    skipBtn.textContent = currentMode === 'work' ? t.skip : t.work;
     infoWorkEl.textContent = workDuration / 60;
     infoBreakEl.textContent = breakDuration / 60;
     updateDailyFocusDisplay();
 
     // 更新按钮状态
     if (isRunning) {
-        startPauseBtn.textContent = '⏸ 暂停';
+        startPauseBtn.textContent = t.pause;
         resetBtn.disabled = true;
         skipBtn.disabled = true;
         settingsOpenBtn.disabled = true;
     } else {
-        startPauseBtn.textContent = timeLeft === (currentMode === 'work' ? workDuration : breakDuration) ? '▶ 开始' : '▶ 继续';
+        startPauseBtn.textContent = timeLeft === (currentMode === 'work' ? workDuration : breakDuration) ? t.start : t.resume;
         resetBtn.disabled = false;
         skipBtn.disabled = false;
         settingsOpenBtn.disabled = false;
     }
 
     let title = 'To-mato';
-     if (isRunning) title = `${formatTime(timeLeft)} - ${currentMode === 'work' ? '专注中' : '休息中'} | ${title}`;
-     else if (startPauseBtn.textContent === '▶ 继续') title = `已暂停 | ${title}`;
+     if (isRunning) title = `${formatTime(timeLeft)} - ${currentMode === 'work' ? (currentLang === 'zh' ? '专注中' : 'Focusing') : (currentLang === 'zh' ? '休息中' : 'Breaking')} | ${title}`;
+     else if (startPauseBtn.textContent.includes('继续') || startPauseBtn.textContent.includes('Resume')) title = `${currentLang === 'zh' ? '已暂停' : 'Paused'} | ${title}`;
      document.title = title;
 };
 const switchMode = () => {
@@ -571,7 +593,7 @@ const resetTimer = (applySettings = false) => {
         completedCycles = 0;
         saveTimerSettingsOnly();
     }
-   startPauseBtn.textContent = '▶ 开始';
+   startPauseBtn.textContent = translations[currentLang].start;
    saveTimerState(); // 保存状态
    updateDisplay();
 };
@@ -592,9 +614,142 @@ const skipTimer = () => {
      updateDisplay();
 }
 
+// --- Language Functions ---
+const translations = {
+    zh: {
+        title: 'To-mato',
+        subtitle: '管理你的任务，用番茄钟提高效率，记录你的每一天',
+        focusTime: '专注时间',
+        breakTime: '休息一下',
+        completedCycles: '已完成',
+        cycles: '个循环',
+        todayFocus: '今日已专注',
+        start: '▶ 开始',
+        pause: '⏸ 暂停',
+        resume: '▶ 继续',
+        reset: '🔄 重置',
+        skip: '☕ 休息',
+        work: '👩‍💻 工作',
+        addTask: '添加新任务',
+        taskPlaceholder: '输入新任务...',
+        priority: '优先级:',
+        low: '低',
+        medium: '中',
+        high: '高',
+        addTaskBtn: '＋ 添加任务',
+        noTasks: '还没有任务，添加一个开始吧!',
+        completed: '已完成',
+        countdown: '目标日倒计时',
+        targetName: '目标名称:',
+        targetPlaceholder: '例如: 高考',
+        selectDate: '选择一个未来的日期:',
+        stopwatch: '正计时',
+        todayCompleted: '今日已办',
+        settings: '番茄钟设置',
+        focusDuration: '专注时长 (分钟):',
+        breakDuration: '休息时长 (分钟):',
+        cancel: '取消',
+        save: '保存',
+        themeColor: '主题颜色:',
+        darkMode: '暗黑模式',
+        language: '语言 / Language'
+    },
+    en: {
+        title: 'To-mato',
+        subtitle: 'Manage tasks, boost productivity with Pomodoro, track your days',
+        focusTime: 'Focus Time',
+        breakTime: 'Break Time',
+        completedCycles: 'Completed',
+        cycles: 'cycles',
+        todayFocus: 'Today\'s Focus',
+        start: '▶ Start',
+        pause: '⏸ Pause',
+        resume: '▶ Resume',
+        reset: '🔄 Reset',
+        skip: '☕ Break',
+        work: '👩‍💻 Work',
+        addTask: 'Add New Task',
+        taskPlaceholder: 'Enter new task...',
+        priority: 'Priority:',
+        low: 'Low',
+        medium: 'Med',
+        high: 'High',
+        addTaskBtn: '＋ Add Task',
+        noTasks: 'No tasks yet, add one to start!',
+        completed: 'Completed',
+        countdown: 'Countdown Timer',
+        targetName: 'Target Name:',
+        targetPlaceholder: 'e.g., Exam',
+        selectDate: 'Select a future date:',
+        stopwatch: 'Stopwatch',
+        todayCompleted: 'Today\'s Done',
+        settings: 'Timer Settings',
+        focusDuration: 'Focus Duration (min):',
+        breakDuration: 'Break Duration (min):',
+        cancel: 'Cancel',
+        save: 'Save',
+        themeColor: 'Theme Color:',
+        darkMode: 'Dark Mode',
+        language: '语言 / Language'
+    }
+};
+
+const applyLanguage = (lang) => {
+    currentLang = lang;
+    const t = translations[lang];
+
+    document.querySelector('header h1').textContent = t.title;
+    document.querySelector('header p').textContent = t.subtitle;
+    document.getElementById('timer-mode-title').textContent = currentMode === 'work' ? t.focusTime : t.breakTime;
+    document.querySelector('.timer-status').innerHTML = `${t.completedCycles} <span id="cycle-count">${completedCycles}</span> ${t.cycles}`;
+    document.querySelector('.focus-time-status').childNodes[0].textContent = `${t.todayFocus} `;
+    document.getElementById('task-input').placeholder = t.taskPlaceholder;
+    document.querySelector('.priority-options').childNodes[0].textContent = t.priority + ' ';
+    document.querySelectorAll('.priority-btn')[0].textContent = t.low;
+    document.querySelectorAll('.priority-btn')[1].textContent = t.medium;
+    document.querySelectorAll('.priority-btn')[2].textContent = t.high;
+    document.getElementById('add-task-btn').textContent = t.addTaskBtn;
+    document.querySelector('.empty-state').innerHTML = `<div>📋</div>${t.noTasks}`;
+    document.querySelector('.completion-label').textContent = t.completed;
+    document.querySelectorAll('.card h3')[1].innerHTML = `<span class="icon">➕</span> ${t.addTask}`;
+    document.querySelector('.countdown-section h3').innerHTML = `<span class="icon">🎯</span> ${t.countdown}`;
+    document.querySelector('.stopwatch-section h3').innerHTML = `<span class="icon">⏱️</span> ${t.stopwatch}`;
+    document.querySelector('.calendar-view-mode .view-label').textContent = t.todayCompleted;
+    document.querySelector('#settings-modal h3').innerHTML = `<span class="icon">⚙️</span> ${t.settings}`;
+    document.querySelector('label[for="work-duration-slider"]').textContent = t.focusDuration;
+    document.querySelector('label[for="break-duration-slider"]').textContent = t.breakDuration;
+    document.getElementById('settings-cancel-btn').textContent = t.cancel;
+    document.getElementById('settings-save-btn').textContent = t.save;
+    document.querySelector('#theme-panel > label:first-child').textContent = t.themeColor;
+    document.querySelector('.dark-mode-toggle span').textContent = t.darkMode;
+    document.querySelector('label[for="target-title"]').textContent = t.targetName;
+    document.querySelector('label[for="target-date"]').textContent = t.selectDate;
+    document.getElementById('target-title').placeholder = t.targetPlaceholder;
+
+    skipBtn.textContent = currentMode === 'work' ? t.skip : t.work;
+    resetBtn.textContent = t.reset;
+
+    if (isRunning) {
+        startPauseBtn.textContent = t.pause;
+    } else {
+        startPauseBtn.textContent = timeLeft === (currentMode === 'work' ? workDuration : breakDuration) ? t.start : t.resume;
+    }
+
+    if (stopwatchRunning) {
+        stopwatchStartBtn.textContent = t.pause;
+    } else {
+        stopwatchStartBtn.textContent = stopwatchTime === 0 ? t.start : t.resume;
+    }
+
+    stopwatchResetBtn.textContent = t.reset;
+
+    langCheckbox.checked = lang === 'en';
+    updateCountdown();
+};
+
 // --- UI / Theme / Settings Functions ---
 const saveUiSettings = () => {
-   localStorage.setItem('uiSettings', JSON.stringify({ theme: currentTheme, mode: currentUiMode }));
+   localStorage.setItem('uiSettings', JSON.stringify({ theme: currentTheme, mode: currentUiMode, lang: currentLang }));
 }
 const applyTheme = (themeName) => {
    document.body.dataset.theme = themeName;
@@ -1174,6 +1329,7 @@ const loadState = () => {
             const ui = JSON.parse(savedUiSettings);
             currentTheme = ui.theme || 'blue-grey';
             currentUiMode = ui.mode || 'light';
+            currentLang = ui.lang || 'zh';
         } catch(e) { }
     }
 
@@ -1188,6 +1344,7 @@ const loadState = () => {
 
      applyTheme(currentTheme);
      applyMode(currentUiMode);
+     applyLanguage(currentLang);
      renderTasks();
      updateDisplay();
      addTaskBtn.disabled = taskInput.value.trim() === '';
@@ -1238,6 +1395,11 @@ themeSelectorPanel.addEventListener('click', handleThemeChange);
 darkModeCheckbox.addEventListener('change', (e) => {
     const mode = e.target.checked ? 'dark' : 'light';
     applyMode(mode);
+    saveUiSettings();
+});
+langCheckbox.addEventListener('change', (e) => {
+    const lang = e.target.checked ? 'en' : 'zh';
+    applyLanguage(lang);
     saveUiSettings();
 });
 document.querySelector('.priority-options').addEventListener('click', (e) => { if (e.target.classList.contains('priority-btn')) { e.preventDefault(); } });
