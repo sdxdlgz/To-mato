@@ -1,529 +1,1203 @@
- // --- State ---
- let tasks = [];
- let currentPriority = 'medium';
- let timerInterval = null;
- let timeLeft = 25 * 60; // seconds
- let isRunning = false;
- let currentMode = 'work'; // 'work' or 'break'
- let workDuration = 25 * 60;
- let breakDuration = 5 * 60;
- let completedCycles = 0;
- let currentTheme = 'default';
- let myName = '';
- let currentRoomPin = '';
- let taskStats = '0/0';
+// --- State (单机版) ---
+let tasks = [];
+let currentPriority = 'medium';
+let timerInterval = null;
+let timeLeft = 25 * 60;
+let isRunning = false;
+let currentMode = 'work';
+let workDuration = 25 * 60;
+let breakDuration = 5 * 60;
+let completedCycles = 0;
+// 新增：基于时间戳的计时
+let timerStartTime = null; // 计时器开始的时间戳
+let timerEndTime = null; // 计时器应该结束的时间戳
+// 新增: 专注时间统计
+let dailyFocusTime = 0; // 今日总专注时间（秒）
+let currentSessionStartTime = null; // 当前专注会话开始时间
+let focusHistory = []; // 专注历史记录
+// 新增: UI状态, 并更新默认主题
+let currentTheme = 'blue-grey';
+let currentUiMode = 'light'; // 'light' or 'dark'
+let calendar = null; // 日历实例
 
-// --- WebSocket State ---
-let ws = null;
-let roomUsers = {}; // { userId: { name, status: {mode, timeLeft, isRunning, tasks} } }
-const PING_INTERVAL = 45000; // Ping server every 45s to keep connection alive
-let pingIntervalId = null;
-let statusUpdateTimeoutId = null; // Debounce timer
-
- // --- DOM Elements ---
- const taskForm = document.getElementById('add-task-form');
- const taskInput = document.getElementById('task-input');
- const taskList = document.getElementById('task-list');
- const priorityBtns = document.querySelectorAll('.priority-btn');
- const todoStatsEl = document.getElementById('todo-stats');
- const emptyStateEl = document.getElementById('empty-state');
- const timerDisplay = document.getElementById('timer-display');
- const startPauseBtn = document.getElementById('start-pause-btn');
- const resetBtn = document.getElementById('reset-btn');
- const skipBtn = document.getElementById('skip-btn');
- const cycleCountEl = document.getElementById('cycle-count');
- const timerModeTitleEl = document.getElementById('timer-mode-title');
- const progressFill = document.getElementById('progress-fill');
- const workEndSound = document.getElementById('work-end-sound');
- const breakEndSound = document.getElementById('break-end-sound');
- const settingsModal = document.getElementById('settings-modal');
- const settingsOpenBtn = document.getElementById('settings-open-btn');
- const settingsSaveBtn = document.getElementById('settings-save-btn');
- const settingsCancelBtn = document.getElementById('settings-cancel-btn');
- const workDurationInput = document.getElementById('work-duration');
- const breakDurationInput = document.getElementById('break-duration');
- const infoWorkEl = document.getElementById('info-work');
- const infoBreakEl = document.getElementById('info-break');
- const themeSelectors = document.querySelectorAll('.theme-selector span');
- const addTaskBtn = document.getElementById('add-task-btn');
-// ROOM DOM
- const joinModal = document.getElementById('join-modal');
- const joinForm = document.getElementById('join-form');
- const joinBtn = document.getElementById('join-btn');
- const leaveBtn = document.getElementById('leave-btn');
- const joinCancelBtn = document.getElementById('join-cancel-btn');
- const userNameInput = document.getElementById('user-name');
- const roomPinInput = document.getElementById('room-pin');
- const roomStatusEl = document.getElementById('room-status');
- const roomInfoEl = document.getElementById('room-info');
- const roomPanel = document.getElementById('room-panel');
- const userListEl = document.getElementById('user-list');
- const userCountEl = document.getElementById('user-count');
- const chatBox = document.getElementById('chat-box');
- const chatForm = document.getElementById('chat-form');
- const chatInput = document.getElementById('chat-input');
+// --- DOM Elements ---
+const taskForm = document.getElementById('add-task-form');
+const taskInput = document.getElementById('task-input');
+const taskList = document.getElementById('task-list');
+const priorityBtns = document.querySelectorAll('.priority-btn');
+const emptyStateEl = document.getElementById('empty-state');
+const timerDisplay = document.getElementById('timer-display');
+const startPauseBtn = document.getElementById('start-pause-btn');
+const resetBtn = document.getElementById('reset-btn');
+const skipBtn = document.getElementById('skip-btn');
+const cycleCountEl = document.getElementById('cycle-count');
+const timerModeTitleEl = document.getElementById('timer-mode-title');
+const dailyFocusTimeEl = document.getElementById('daily-focus-time');
+const resetFocusTimeBtn = document.getElementById('reset-focus-time-btn');
+const workEndSound = document.getElementById('work-end-sound');
+const breakEndSound = document.getElementById('break-end-sound');
+const settingsModal = document.getElementById('settings-modal');
+const settingsOpenBtn = document.getElementById('settings-open-btn');
+const settingsSaveBtn = document.getElementById('settings-save-btn');
+const settingsCancelBtn = document.getElementById('settings-cancel-btn');
+const infoWorkEl = document.getElementById('info-work');
+const infoBreakEl = document.getElementById('info-break');
+const addTaskBtn = document.getElementById('add-task-btn');
+const completionCircle = document.getElementById('completion-circle');
+const completionPercentageEl = document.getElementById('completion-percentage');
+const CIRCLE_RADIUS = 54;
+const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+const themeFabBtn = document.getElementById('theme-fab-btn');
+const themePanel = document.getElementById('theme-panel');
+const themeSelectorPanel = document.getElementById('theme-selector-panel');
+const darkModeCheckbox = document.getElementById('dark-mode-checkbox');
+const workDurationSlider = document.getElementById('work-duration-slider');
+const workDurationValue = document.getElementById('work-duration-value');
+const breakDurationSlider = document.getElementById('break-duration-slider');
+const breakDurationValue = document.getElementById('break-duration-value');
+const calendarTitle = document.getElementById('calendar-title');
+const calendarNav = document.querySelector('.calendar-nav');
+const calendarViewMode = document.querySelector('.calendar-view-mode');
+const targetDateInput = document.getElementById('target-date');
+const countdownDisplay = document.getElementById('countdown-display');
+const targetTitleInput = document.getElementById('target-title');
 
 
 // --- Helper Functions ---
- const escapeHTML = (str) => {
-    const div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
- };
- const formatTime = (seconds) => {
-     if (isNaN(seconds) || seconds < 0) return "00:00";
-      const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
-      const secs = (seconds % 60).toString().padStart(2, '0');
-      return `${minutes}:${secs}`;
- };
- const playSound = (audioEl) => {
-    audioEl.currentTime = 0;
-    audioEl.play().catch(e => console.log("Audio play prevented: ", e));
+const debounce = (func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 };
 
-// --- TODO Functions ---
-const saveTasks = () => localStorage.setItem('tasks', JSON.stringify(tasks));
+const escapeHTML = (str) => {
+   const div = document.createElement('div');
+   div.appendChild(document.createTextNode(str));
+   return div.innerHTML;
+};
+const formatTime = (seconds) => {
+    if (isNaN(seconds) || seconds < 0) return "00:00";
+     const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+     const secs = (seconds % 60).toString().padStart(2, '0');
+     return `${minutes}:${secs}`;
+};
+const playSound = (audioEl) => {
+   audioEl.currentTime = 0;
+   audioEl.play().catch(() => {});
+};
+
+// 专注时间相关辅助函数
+const formatFocusTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+        return `${hours}小时${minutes}分钟`;
+    }
+    return `${minutes}分钟`;
+};
+
+const getTodayDateString = () => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+};
+
+const updateDailyFocusDisplay = () => {
+    if (dailyFocusTimeEl) {
+        let totalFocusTime = dailyFocusTime;
+
+        // 如果当前正在专注，加上当前会话的时间
+        if (currentMode === 'work' && currentSessionStartTime && isRunning) {
+            const currentSessionTime = Math.floor((new Date() - currentSessionStartTime) / 1000);
+            totalFocusTime += currentSessionTime;
+        }
+
+        dailyFocusTimeEl.textContent = formatFocusTime(totalFocusTime);
+    }
+};
+
+const resetDailyFocusTime = () => {
+    if (confirm('确定要重置今日专注时间吗？这将清除今天的所有专注记录。')) {
+        dailyFocusTime = 0;
+        focusHistory = focusHistory.filter(session => session.date !== getTodayDateString());
+        saveFocusHistory();
+        updateDailyFocusDisplay();
+    }
+};
+
+// --- Countdown Functions ---
+const saveCountdownData = () => {
+    const countdownData = {
+        title: targetTitleInput.value,
+        date: targetDateInput.value
+    };
+    localStorage.setItem('countdownData', JSON.stringify(countdownData));
+};
+
+const updateCountdown = () => {
+    const targetTitle = targetTitleInput.value.trim();
+    const targetDateValue = targetDateInput.value;
+
+    saveCountdownData();
+
+    if (!targetDateValue) {
+        countdownDisplay.innerHTML = '请选择一个日期';
+        return;
+    }
+
+    const targetDate = new Date(targetDateValue);
+    const today = new Date();
+
+    targetDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = targetDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const titleText = targetTitle ? escapeHTML(targetTitle) : '目标日';
+
+    if (diffDays < 0) {
+        countdownDisplay.innerHTML = `“${titleText}”已经过去了!`;
+    } else if (diffDays === 0) {
+        countdownDisplay.innerHTML = `“${titleText}”就是今天！🎉`;
+    } else {
+        countdownDisplay.innerHTML = `距离“${titleText}”还有 <span class="countdown-days">${diffDays}</span> 天`;
+    }
+};
+
+// --- TODO Functions (大改, 支持编辑) ---
+const saveTasks = debounce(() => localStorage.setItem('tasks', JSON.stringify(tasks)), 300);
+const animatePercentage = (targetPercentage) => {
+   let current = parseInt(completionPercentageEl.textContent) || 0;
+   const step = (targetPercentage > current) ? 1 : -1;
+   if (current === targetPercentage) return;
+   const interval = setInterval(() => {
+       if (current !== targetPercentage) {
+           current += step;
+           completionPercentageEl.textContent = `${current}%`;
+       } else {
+           clearInterval(interval);
+       }
+   }, 15);
+};
+let cachedPrimaryColor = null;
+const updatePrimaryColor = () => {
+    cachedPrimaryColor = getComputedStyle(document.body).getPropertyValue('--primary-color').trim();
+};
+
 const renderTasks = () => {
-     taskList.innerHTML = '';
-     const completedCount = tasks.filter(task => task.completed).length;
-     taskStats = `${completedCount}/${tasks.length}`;
-     todoStatsEl.innerHTML = `<span class="icon">✔️</span> 已完成 ${taskStats} 项任务`;
-     emptyStateEl.style.display = tasks.length === 0 ? 'block' : 'none';
-     tasks.sort((a, b) => {
-          if (a.completed !== b.completed) return a.completed - b.completed; 
-          const priorityOrder = { high: 1, medium: 2, low: 3 };
-          return priorityOrder[a.priority] - priorityOrder[b.priority];
-     }).forEach(task => {
-         const li = document.createElement('li');
-         li.innerHTML = `
-             <input type="checkbox" ${task.completed ? 'checked' : ''} data-id="${task.id}">
-             <span class="priority-dot ${task.priority}" title="${task.priority} priority"></span>
-             <span class="task-text ${task.completed ? 'completed' : ''}">${escapeHTML(task.text)}</span>
-             <button class="delete-btn" data-id="${task.id}" title="删除任务">&times;</button>
-         `;
-         taskList.appendChild(li);
-     });
-     scheduleStatusUpdate(); // EVENT: Notify room when tasks change
- };
- const addTask = (e) => {
-    e.preventDefault();
-    const text = taskInput.value.trim();
-    if (!text) return;
-    tasks.push({ id: Date.now(), text: text, priority: currentPriority, completed: false });
-    taskInput.value = '';
-    addTaskBtn.disabled = true;
-    saveTasks();
-    renderTasks();
- };
- const handleTaskAction = (e) => {
-     const id = parseInt(e.target.dataset.id);
-      if (isNaN(id)) return;
-      if (e.target.type === 'checkbox') {
-          const task = tasks.find(t => t.id === id);
-          if (task) { task.completed = e.target.checked; saveTasks(); renderTasks(); }
-     } else if (e.target.classList.contains('delete-btn')) {
-          tasks = tasks.filter(t => t.id !== id); saveTasks(); renderTasks();
-     }
- };
- const setPriority = (e) => {
-    if(!e.target.classList.contains('priority-btn')) return;
-    priorityBtns.forEach(btn => btn.classList.remove('active'));
-    e.target.classList.add('active');
-    currentPriority = e.target.dataset.priority;
- };
+    taskList.innerHTML = '';
+    const completedCount = tasks.filter(task => task.completed).length;
+    const totalTasks = tasks.length;
+    const percentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+    const offset = CIRCLE_CIRCUMFERENCE * (1 - percentage / 100);
+
+    completionCircle.style.strokeDasharray = CIRCLE_CIRCUMFERENCE;
+    completionCircle.style.strokeDashoffset = offset;
+    if (!cachedPrimaryColor) updatePrimaryColor();
+    if (cachedPrimaryColor) {
+        completionCircle.style.stroke = cachedPrimaryColor;
+    }
+
+    animatePercentage(percentage);
+    emptyStateEl.style.display = totalTasks === 0 ? 'block' : 'none';
+    tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.dataset.id = task.id;
+        li.innerHTML = `
+            <span class="draggable-handle">⠿</span>
+            <input type="checkbox" ${task.completed ? 'checked' : ''}>
+            <span class="priority-dot ${task.priority}" title="点击更改优先级"></span>
+            <span class="task-text">${escapeHTML(task.text)}</span>
+            <button class="delete-btn" title="删除任务">&times;</button>
+        `;
+        taskList.appendChild(li);
+    });
+};
+const addTask = (e) => {
+   e.preventDefault();
+   const text = taskInput.value.trim();
+   if (!text) return;
+   tasks.push({ id: Date.now(), text: text, priority: currentPriority, completed: false, createdAt: new Date().toISOString() });
+   taskInput.value = '';
+   addTaskBtn.disabled = true;
+   saveTasks();
+   renderTasks();
+};
+const handleTaskAction = (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    const id = parseInt(li.dataset.id);
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    if (e.target.type === 'checkbox') {
+        task.completed = e.target.checked;
+        if (task.completed) {
+            task.completedAt = new Date().toISOString();
+            addEventToCalendar(task);
+        } else {
+            delete task.completedAt;
+            removeEventFromCalendar(task.id);
+        }
+        saveTasks();
+        renderTasks();
+        refreshCalendarEvents();
+    } else if (e.target.classList.contains('delete-btn')) {
+        tasks = tasks.filter(t => t.id !== id);
+        removeEventFromCalendar(id);
+        saveTasks();
+        renderTasks();
+    } else if (e.target.classList.contains('task-text')) {
+        e.preventDefault();
+        e.stopPropagation();
+        enterEditMode(e.target, id);
+        return; // 不要在编辑模式下重新渲染
+    } else if (e.target.classList.contains('priority-dot')) {
+        const priorities = ['low', 'medium', 'high'];
+        const currentIndex = priorities.indexOf(task.priority);
+        task.priority = priorities[(currentIndex + 1) % priorities.length];
+        updateEventInCalendar(task);
+        saveTasks();
+        renderTasks();
+    }
+};
+const enterEditMode = (textElement, taskId) => {
+    const currentText = textElement.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentText;
+    input.className = 'edit-task-input';
+    textElement.replaceWith(input);
+    input.focus();
+    input.select();
+
+    const saveChanges = () => {
+        const newText = input.value.trim();
+        const task = tasks.find(t => t.id === taskId);
+        if (task && newText && newText !== task.text) {
+            task.text = newText;
+            updateEventInCalendar(task);
+        }
+        saveTasks();
+        renderTasks(); // 重新渲染整个列表
+    };
+
+    input.addEventListener('blur', saveChanges);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            input.blur();
+        } else if (e.key === 'Escape') {
+            input.value = currentText; // 恢复原始文本
+            input.blur();
+        }
+    });
+};
+const setPriority = (e) => {
+   if(!e.target.classList.contains('priority-btn')) return;
+   priorityBtns.forEach(btn => btn.classList.remove('active'));
+   e.target.classList.add('active');
+   currentPriority = e.target.dataset.priority;
+};
 
 // --- Pomodoro Functions ---
-const saveTimerSettings = () => {
-    localStorage.setItem('timerSettings', JSON.stringify({ workDuration, breakDuration, completedCycles, currentTheme }));
-};
- const updateDisplay = () => {
-     timerDisplay.textContent = formatTime(timeLeft);
-     cycleCountEl.textContent = completedCycles;
-     timerModeTitleEl.textContent = currentMode === 'work' ? '专注时间 ⏳' : '休息一下 ☕';
-     skipBtn.textContent = currentMode === 'work' ? '☕ 休息' : '👩‍💻 工作' ;
-     infoWorkEl.textContent = workDuration / 60;
-     infoBreakEl.textContent = breakDuration / 60;
-     const totalDuration = currentMode === 'work' ? workDuration : breakDuration;
-     const progress = (totalDuration === 0 || timeLeft < 0) ? 0 : ((totalDuration - timeLeft) / totalDuration) * 100;
-     progressFill.style.width = `${progress}%`;
-     let title = '待办与专注自习室';
-      if (isRunning) title = `${formatTime(timeLeft)} - ${currentMode === 'work' ? '专注中' : '休息中'} | ${title}`;
-      else if (startPauseBtn.textContent === '▶ 继续') title = `已暂停 | ${title}`;
-      document.title = title;
-      // <<< IMPORTANT: REMOVED scheduleStatusUpdate() from here to save DO requests >>>
- };
+const saveTimerState = debounce(() => {
+   const timerState = {
+       workDuration,
+       breakDuration,
+       completedCycles,
+       timeLeft,
+       currentMode,
+       isRunning: isRunning,
+       currentSessionStartTime: currentSessionStartTime ? currentSessionStartTime.toISOString() : null,
+       timerStartTime: timerStartTime ? timerStartTime.toISOString() : null,
+       timerEndTime: timerEndTime ? timerEndTime.toISOString() : null,
+       lastSaveTime: new Date().toISOString()
+   };
+   localStorage.setItem('timerSettings', JSON.stringify(timerState));
+}, 500);
 
- const switchMode = () => {
-    clearInterval(timerInterval);
-    isRunning = false;
-    startPauseBtn.textContent = '▶ 继续';
-    resetBtn.disabled = false; skipBtn.disabled = false; settingsOpenBtn.disabled = false;
-    if (currentMode === 'work') {
-        completedCycles++; currentMode = 'break'; timeLeft = breakDuration; playSound(workEndSound);
+const saveFocusHistory = debounce(() => {
+   const today = getTodayDateString();
+   const focusData = {
+       date: today,
+       totalTime: dailyFocusTime,
+       history: focusHistory.filter(session => session.date === today)
+   };
+   localStorage.setItem('focusHistory', JSON.stringify(focusData));
+}, 500);
+
+const saveTimerSettingsOnly = () => {
+   saveTimerState();
+   saveFocusHistory();
+};
+const updateDisplay = () => {
+    timerDisplay.textContent = formatTime(timeLeft);
+    cycleCountEl.textContent = completedCycles;
+    timerModeTitleEl.textContent = currentMode === 'work' ? '专注时间 ⏳' : '休息一下 ☕';
+    skipBtn.textContent = currentMode === 'work' ? '☕ 休息' : '👩‍💻 工作' ;
+    infoWorkEl.textContent = workDuration / 60;
+    infoBreakEl.textContent = breakDuration / 60;
+    updateDailyFocusDisplay();
+
+    // 更新按钮状态
+    if (isRunning) {
+        startPauseBtn.textContent = '⏸ 暂停';
+        resetBtn.disabled = true;
+        skipBtn.disabled = true;
+        settingsOpenBtn.disabled = true;
     } else {
-        currentMode = 'work'; timeLeft = workDuration; playSound(breakEndSound);
+        startPauseBtn.textContent = timeLeft === (currentMode === 'work' ? workDuration : breakDuration) ? '▶ 开始' : '▶ 继续';
+        resetBtn.disabled = false;
+        skipBtn.disabled = false;
+        settingsOpenBtn.disabled = false;
     }
-    saveTimerSettings(); 
-    updateDisplay();
-    scheduleStatusUpdate(); // EVENT: Mode changed
-    setTimeout(() => { if (!isRunning) startTimer(); }, 1500);
- };
+
+    let title = 'To-mato';
+     if (isRunning) title = `${formatTime(timeLeft)} - ${currentMode === 'work' ? '专注中' : '休息中'} | ${title}`;
+     else if (startPauseBtn.textContent === '▶ 继续') title = `已暂停 | ${title}`;
+     document.title = title;
+};
+const switchMode = () => {
+   clearInterval(timerInterval);
+   isRunning = false;
+
+   // 如果是工作模式结束，记录专注时间
+   if (currentMode === 'work' && currentSessionStartTime) {
+       const sessionDuration = Math.floor((new Date() - currentSessionStartTime) / 1000);
+       if (sessionDuration > 0) {
+           dailyFocusTime += sessionDuration;
+           focusHistory.push({
+               date: getTodayDateString(),
+               startTime: currentSessionStartTime.toISOString(),
+               endTime: new Date().toISOString(),
+               duration: sessionDuration
+           });
+           saveFocusHistory();
+       }
+       currentSessionStartTime = null;
+   }
+
+
+   if (currentMode === 'work') {
+       currentMode = 'break'; timeLeft = breakDuration; playSound(workEndSound);
+   } else {
+       // 休息结束，完成一个完整循环
+       completedCycles++;
+       currentMode = 'work'; timeLeft = workDuration; playSound(breakEndSound);
+   }
+   
+   // 修复：重置时间戳，为下一次计时做准备
+   timerStartTime = null;
+   timerEndTime = null;
+
+   saveTimerSettingsOnly();
+   startTimer(); // 自动开始下一个计时器
+};
+// 基于时间戳的计时更新函数
+const updateTimerFromTimestamp = () => {
+    if (!isRunning || !timerEndTime) return;
+
+    const now = new Date();
+    const remainingMs = timerEndTime.getTime() - now.getTime();
+
+    if (remainingMs <= 0) {
+        // 时间到了，切换模式
+        timeLeft = 0;
+        switchMode();
+    } else {
+        // 更新剩余时间
+        timeLeft = Math.ceil(remainingMs / 1000);
+        updateDisplay();
+    }
+};
+
 const tick = () => {
-     if (timeLeft > 0) { 
-        timeLeft--; 
-        updateDisplay(); // Only updates local UI now
-     } else { 
-        switchMode(); 
-     }
+    updateTimerFromTimestamp();
+    // 每10秒保存一次状态，避免频繁写入
+    if (timeLeft % 10 === 0) {
+        saveTimerState();
+    }
 };
 const startTimer = () => {
-    if(isRunning) return;
-     if (timeLeft <= 0) { timeLeft = (currentMode === 'work') ? workDuration : breakDuration; updateDisplay();
-        if (timeLeft <=0) return; 
-     }
-    isRunning = true;
-    startPauseBtn.textContent = '⏸ 暂停';
-    resetBtn.disabled = true; skipBtn.disabled = true; settingsOpenBtn.disabled = true;
-    if(timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(tick, 1000);
-    updateDisplay();
-    scheduleStatusUpdate(); // EVENT: Timer Started
+   if(isRunning) return;
+    if (timeLeft <= 0) { timeLeft = (currentMode === 'work') ? workDuration : breakDuration; updateDisplay();
+       if (timeLeft <=0) return;
+    }
+   isRunning = true;
+
+   // 如果 timerEndTime 不存在, 说明是全新的计时, 需要设置它.
+   // 如果存在, 说明是“恢复”, 我们要沿用旧的结束时间.
+   if (!timerEndTime) {
+       timerStartTime = new Date();
+       timerEndTime = new Date(timerStartTime.getTime() + timeLeft * 1000);
+   }
+
+   // 如果是工作模式且没有会话开始时间，记录开始时间
+   if (currentMode === 'work' && !currentSessionStartTime) {
+       currentSessionStartTime = new Date();
+   }
+
+
+   if(timerInterval) clearInterval(timerInterval);
+   timerInterval = setInterval(tick, 1000);
+   saveTimerState(); // 保存状态
+   updateDisplay();
 };
- const pauseTimer = () => {
-    if(!isRunning) return;
-     clearInterval(timerInterval);
-     timerInterval = null; isRunning = false;
-     startPauseBtn.textContent = '▶ 继续';
-     resetBtn.disabled = false; skipBtn.disabled = false; settingsOpenBtn.disabled = false;
-      updateDisplay();
-      scheduleStatusUpdate(); // EVENT: Timer Paused
- };
- const toggleTimer = () => {
-     workEndSound.load(); breakEndSound.load();
-     if (isRunning) pauseTimer(); else startTimer();
- };
- const resetTimer = (applySettings = false) => {
-    pauseTimer(); 
-    currentMode = 'work'; timeLeft = workDuration;
-     if(!applySettings) { 
-         completedCycles = 0;
-          localStorage.setItem('timerSettings', JSON.stringify({ workDuration, breakDuration, completedCycles, currentTheme }));
-     }
-    startPauseBtn.textContent = '▶ 开始'; 
-    updateDisplay();
-    scheduleStatusUpdate(); // EVENT: Timer Reset
- };
- const skipTimer = () => {
-     // pauseTimer() calls scheduleStatusUpdate, call it before changing state
-     const wasRunning = isRunning;
-     pauseTimer(); 
-      if (currentMode === 'work') { currentMode = 'break'; timeLeft = breakDuration; } 
-      else { currentMode = 'work'; timeLeft = workDuration; }
-      startPauseBtn.textContent = '▶ 开始'; 
-      updateDisplay();
-      if (!wasRunning) scheduleStatusUpdate(); // EVENT: Mode skipped (if not running)
- }
+const pauseTimer = () => {
+   if(!isRunning) return;
 
-// --- Settings & Theme Functions ---
- const applyTheme = (themeName) => {
-     if (!themeName) themeName = 'default';
-      document.body.setAttribute('data-theme', themeName);
-      currentTheme = themeName;
-       themeSelectors.forEach(span => {
-          span.classList.remove('active');
-          if(span.dataset.theme === themeName) span.classList.add('active');
-       });
-  }
- const openSettings = () => { pauseTimer(); workDurationInput.value = workDuration / 60; breakDurationInput.value = breakDuration / 60; settingsModal.classList.add('show'); }
- const closeSettings = () => settingsModal.classList.remove('show');
- const saveSettings = () => {
-     const newWorkMin = parseInt(workDurationInput.value, 10);
-     const newBreakMin = parseInt(breakDurationInput.value, 10);
-     if (isNaN(newWorkMin) || isNaN(newBreakMin) || newWorkMin <=0 || newBreakMin <=0) {
-          alert("请输入有效的正整数分钟数!"); return;
-     }
-     const durationChanged = (workDuration !== newWorkMin * 60) || (breakDuration !== newBreakMin * 60)
-     workDuration = newWorkMin * 60; breakDuration = newBreakMin * 60;
-     const activeTheme = document.querySelector('.theme-selector span.active');
-     currentTheme = activeTheme ? activeTheme.dataset.theme : 'default';
-     saveTimerSettings();
-     if(durationChanged) resetTimer(true); // resetTimer calls scheduleStatusUpdate
-     else updateDisplay(); // Just update info text and title, no state change event
-     closeSettings();
-  }
-  const handleThemeChange = (e) => {
-      if(e.target.dataset.theme){
-          document.body.setAttribute('data-theme', e.target.dataset.theme);
-           themeSelectors.forEach(span => {
-              span.classList.remove('active');
-               if(span.dataset.theme === e.target.dataset.theme) span.classList.add('active');
-            });
-      }
+   // 基于时间戳更新当前剩余时间
+   updateTimerFromTimestamp(); // This correctly updates timeLeft based on timerEndTime
+
+   // 如果是工作模式且有开始时间，记录这段专注时间
+   if (currentMode === 'work' && currentSessionStartTime) {
+       const sessionDuration = Math.floor((new Date() - currentSessionStartTime) / 1000);
+       if (sessionDuration > 0) {
+           dailyFocusTime += sessionDuration;
+           focusHistory.push({
+               date: getTodayDateString(),
+               startTime: currentSessionStartTime.toISOString(),
+               endTime: new Date().toISOString(),
+               duration: sessionDuration
+           });
+           saveFocusHistory();
+       }
+       // 暂停时，清除会话开始时间。恢复时会重新设置。
+       currentSessionStartTime = null;
    }
 
-// --- Room / WebSocket Functions ---
-const renderRoomUsers = () => {
-    userListEl.innerHTML = '';
-    const users = Object.values(roomUsers);
-    userCountEl.textContent = `(${users.length})`;
-    if (users.length === 0) {
-         userListEl.innerHTML = '<li>房间里只有你</li>';
-         return;
+    clearInterval(timerInterval);
+    timerInterval = null;
+    isRunning = false;
+    // DO NOT nullify timerEndTime. This preserves the target end time.
+    // timerStartTime can be left as is, or nullified. Nullifying is cleaner.
+    timerStartTime = null;
+
+
+    saveTimerState(); // 保存状态
+     updateDisplay();
+};
+const toggleTimer = () => {
+    workEndSound.load(); breakEndSound.load();
+    if (isRunning) pauseTimer(); else startTimer();
+};
+// 重置计时器和循环数（不影响今日专注时间）
+const resetTimer = (applySettings = false) => {
+   pauseTimer();
+   currentMode = 'work';
+   timeLeft = workDuration;
+   currentSessionStartTime = null; // 重置会话开始时间
+   timerStartTime = null;
+   timerEndTime = null;
+    if(!applySettings) {
+        completedCycles = 0;
+        saveTimerSettingsOnly();
     }
-     // Add self first
-     const selfLi = document.createElement('li');
-     const selfTimerInfo = `${currentMode}: ${formatTime(timeLeft)} ${isRunning ? '⏳' : '⏸️'}`;
-     selfLi.innerHTML = `
-        <span class="user-name">${escapeHTML(myName)} (你)</span>
-        <span class="user-tasks">[${taskStats}]</span>
-        <span class="user-status">${selfTimerInfo}</span>
-     `;
-      userListEl.appendChild(selfLi);
-
-    // Add others
-    users.sort((a,b) => a.name.localeCompare(b.name)).forEach(user => {
-       if(user.name === myName) return; // Skip self if also in the list from server (shouldn't happen often but safeguard)
-       const li = document.createElement('li');
-       const status = user.status || {};
-       const mode = status.mode === 'work' ? '专注' : (status.mode === 'break' ? '休息' : '??');
-       const timerInfo = `${mode}: ${formatTime(status.timeLeft || 0)} ${status.isRunning ? '⏳' : '⏸️'}`;
-       const taskInfo = status.tasks || '?/?';
-       li.innerHTML = `
-          <span class="user-name">${escapeHTML(user.name)}</span>
-          <span class="user-tasks">[${taskInfo}]</span>
-          <span class="user-status">${timerInfo}</span>
-       `;
-       userListEl.appendChild(li);
-    });
-}
-
-const addChatMessage = (name, message, isSystem = false) => {
-     const msgDiv = document.createElement('div');
-     msgDiv.className = 'chat-message';
-     if(isSystem) {
-          msgDiv.innerHTML = `<i>系统: ${escapeHTML(message)}</i>`;
+   startPauseBtn.textContent = '▶ 开始';
+   saveTimerState(); // 保存状态
+   updateDisplay();
+};
+const skipTimer = () => {
+    pauseTimer();
+     if (currentMode === 'work') {
+         currentMode = 'break';
+         timeLeft = breakDuration;
+         currentSessionStartTime = null; // 跳过工作时清除会话
      } else {
-          msgDiv.innerHTML = `<strong>${escapeHTML(name)}:</strong> ${escapeHTML(message)}`;
+         currentMode = 'work';
+         timeLeft = workDuration;
      }
-     chatBox.appendChild(msgDiv);
-     chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll
+     timerStartTime = null;
+     timerEndTime = null;
+
+     saveTimerState(); // 保存状态
+     updateDisplay();
 }
 
-const sendWS = (type, payload = {}) => {
-   if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-         ws.send(JSON.stringify({ type, payload }));
-      } catch (e) {
-         console.error("WS Send error:", e);
-         handleWSClose();
-      }
+// --- UI / Theme / Settings Functions ---
+const saveUiSettings = () => {
+   localStorage.setItem('uiSettings', JSON.stringify({ theme: currentTheme, mode: currentUiMode }));
+}
+const applyTheme = (themeName) => {
+   document.body.dataset.theme = themeName;
+   currentTheme = themeName;
+   themeSelectorPanel.querySelectorAll('span').forEach(span => {
+       span.classList.remove('active');
+       if(span.dataset.theme === themeName) span.classList.add('active');
+   });
+
+   requestAnimationFrame(() => {
+       updatePrimaryColor();
+       if (cachedPrimaryColor && completionCircle) {
+           completionCircle.style.stroke = cachedPrimaryColor;
+       }
+       if (calendar) {
+           refreshCalendarEvents();
+       }
+   });
+}
+const applyMode = (modeName) => {
+   document.body.dataset.mode = modeName;
+   currentUiMode = modeName;
+   darkModeCheckbox.checked = modeName === 'dark';
+   if(calendar) refreshCalendarEvents();
+}
+const handleThemeChange = (e) => {
+   const theme = e.target.dataset.theme;
+   if(theme){
+       applyTheme(theme);
+       saveUiSettings();
    }
 }
-// 节流发送状态更新 - 只在关键事件触发
-const scheduleStatusUpdate = () => {
-    if(!ws || ws.readyState !== WebSocket.OPEN) return;
-     if(statusUpdateTimeoutId) clearTimeout(statusUpdateTimeoutId);
-      // console.log("Scheduling status update...");
-     statusUpdateTimeoutId = setTimeout(()=>{
-         // console.log("Sending status update!");
-         sendWS('STATUS_UPDATE', {
-             mode: currentMode,
-             timeLeft: timeLeft,
-             isRunning: isRunning,
-             tasks: taskStats
-         });
-         statusUpdateTimeoutId = null;
-     }, 200); // wait 200ms to batch rapid events (e.g. pause then reset)
+const openTimerSettings = () => {
+   pauseTimer();
+   workDurationSlider.value = workDuration / 60;
+   workDurationValue.textContent = workDuration / 60;
+   breakDurationSlider.value = breakDuration / 60;
+   breakDurationValue.textContent = breakDuration / 60;
+   settingsModal.classList.add('show');
+}
+const closeTimerSettings = () => settingsModal.classList.remove('show');
+const saveTimerSettingsAction = () => {
+    const newWorkMin = parseInt(workDurationSlider.value, 10);
+    const newBreakMin = parseInt(breakDurationSlider.value, 10);
+    const durationChanged = (workDuration !== newWorkMin * 60) || (breakDuration !== newBreakMin * 60)
+    workDuration = newWorkMin * 60;
+    breakDuration = newBreakMin * 60;
+    saveTimerSettingsOnly();
+    if(durationChanged) resetTimer(true);
+    else updateDisplay();
+    closeTimerSettings();
 }
 
-const handleMessage = (event) => {
-     try {
-        const data = JSON.parse(event.data);
-       // console.log("Received:", data);
-        switch (data.type) {
-           case 'INIT': // 收到初始房间状态
-               roomUsers = data.payload.users || {};
-                delete roomUsers[data.payload.myId]; // Don't list self from server data
-               chatBox.innerHTML = ''; // clear chat
-               data.payload.chat.forEach(msg => addChatMessage(msg.name, msg.text));
-               renderRoomUsers();
-               addChatMessage('', `已加入房间 ${currentRoomPin}`, true);
-               break;
-            case 'USER_JOINED':
-                 if (data.payload.name === myName) break; // ignore self
-                 roomUsers[data.payload.id] = { name: data.payload.name, status: data.payload.status || {} };
-                 renderRoomUsers();
-                 addChatMessage('', `${data.payload.name} 加入了房间`, true);
-                 break;
-            case 'USER_LEFT':
-                 const leftUserName = roomUsers[data.payload.id]?.name || 'Unknown';
-                 delete roomUsers[data.payload.id];
-                 renderRoomUsers();
-                 if(leftUserName !== myName) // Don't show message if self left
-                    addChatMessage('', `${leftUserName} 离开了房间`, true);
-                 break;
-             case 'STATUS_UPDATE':
-                  // Only update others, not self
-                 if(roomUsers[data.payload.id] && data.payload.name !== myName) {
-                    roomUsers[data.payload.id].status = data.payload.status;
-                    renderRoomUsers();
-                 }
-                 break;
-              case 'CHAT':
-                   addChatMessage(data.payload.name, data.payload.text);
-                   break;
-              case 'PONG': break;
-              default: console.warn("Unknown message type:", data.type);
+// --- Calendar Functions (深度优化) ---
+const getPriorityColor = (priority) => {
+    return getComputedStyle(document.body).getPropertyValue(`--${priority}-p`).trim() || '#555';
+};
+const initCalendar = () => {
+    calendar = new tui.Calendar('#calendar', {
+        defaultView: 'day',
+        taskView: false,
+        scheduleView: ['allday', 'time'],
+        useCreationPopup: false,
+        useDetailPopup: false, // 禁用默认弹窗，使用自定义
+        week: {
+            showTimezoneCollapseButton: true,
+            timezonesCollapsed: false,
+            hourStart: 0,
+            hourEnd: 24
+        },
+        calendars: [
+            { id: '1', name: 'Tasks', color: '#ffffff', bgColor: '#00a9ff', dragBgColor: '#00a9ff', borderColor: '#00a9ff' }
+        ],
+        template: {
+            time: (schedule) => {
+                // 日视图只显示标题，不显示圆点
+                const taskId = schedule.raw?.taskId || schedule.id;
+                return `<span data-task-id="${taskId}" title="${schedule.title}">${schedule.title}</span>`;
+            },
+            popupDetailDate: (_, start) => {
+                const startDate = new Date(start);
+                return `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, '0')}.${String(startDate.getDate()).padStart(2, '0')}`;
+            },
+            popupDetailTitle: (schedule) => schedule.title,
+            popupEdit: () => '✏️ 编辑',
+            popupDelete: () => '🗑️ 删除'
         }
-     } catch(e) {
-        console.error("Error parsing WS message", e, event.data);
-     }
-}
+    });
 
-const handleWSClose = (event) => {
-     console.log("WebSocket Closed", event?.code, event?.reason);
-      if(ws) { // Only show error if not intentionally closed by leaveRoom
-         addChatMessage('', `连接已断开 (Code: ${event?.code || 'Unknown'})`, true);
-          roomStatusEl.textContent = '已断开';
-      }
-     ws = null;
-     roomUsers = {};
-     renderRoomUsers();
-      if (pingIntervalId) clearInterval(pingIntervalId);
-      pingIntervalId = null;
-      joinBtn.style.display = 'inline-block';
-      leaveBtn.style.display = 'none';
-}
+    updateCalendarView(calendar.getViewName());
+
+    // 延迟加载事件，确保日历完全初始化
+    setTimeout(() => {
+        tasks.filter(t => t.completed).forEach(addEventToCalendar);
+        initScrollbarBehavior();
+    }, 100);
+
+    // 点击日期跳转到日视图
+    calendar.on('clickDayname', (event) => {
+        if (calendar.getViewName() === 'month' || calendar.getViewName() === 'week') {
+            calendar.changeView('day', true);
+            calendar.setDate(new Date(event.date));
+            updateCalendarView('day');
+            refreshCalendarEvents();
+        }
+    });
+
+    // 点击月视图日期数字跳转到日视图
+    calendar.on('clickMore', (event) => {
+        const clickDate = new Date(event.date);
+        const dayTasks = tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const taskDate = new Date(task.completedAt);
+            return taskDate.toDateString() === clickDate.toDateString();
+        });
+
+        if (dayTasks.length > 0) {
+            showDayTasksPopup(dayTasks, event.event, clickDate);
+        }
+    });
+
+    // 点击事件显示自定义弹窗
+    calendar.on('clickSchedule', (event) => {
+        const schedule = event.schedule;
+        const taskId = parseInt(schedule.raw?.taskId || schedule.id);
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+            showTaskDetailPopup(task, event.event);
+        }
+    });
+
+    // 添加DOM事件监听来处理任务圆点点击
+    setTimeout(() => {
+        const calendarEl = document.getElementById('calendar');
+        if (calendarEl) {
+            calendarEl.addEventListener('click', (e) => {
+                // 处理任务圆点点击
+
+                // 检查是否点击了任务相关元素
+                const timeSchedule = e.target.closest('.tui-full-calendar-time-schedule');
+
+                if (timeSchedule) {
+                    // 在时间事件容器中查找taskId
+                    const taskElement = timeSchedule.querySelector('[data-task-id]');
+                    if (taskElement) {
+                        const taskId = parseInt(taskElement.dataset.taskId);
+                        if (taskId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const task = tasks.find(t => t.id === taskId);
+                            if (task) {
+                                showTaskDetailPopup(task, e);
+                                return;
+                            }
+                        }
+                    }
+                }
 
 
-const connectToRoom = (name, pin) => {
-    if(ws) ws.close();
-    myName = name;
-    currentRoomPin = pin;
-    localStorage.setItem('userName', myName);
-    localStorage.setItem('roomPin', currentRoomPin);
-    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsURL = `${wsProto}//${window.location.host}/api/room/${pin}?name=${encodeURIComponent(name)}`; 
-    
-    roomStatusEl.textContent = `连接中...`;
-    roomPanel.style.display = 'block';
-    userListEl.innerHTML = '<li>连接中...</li>';
-     userCountEl.textContent = '';
-    chatBox.innerHTML = '';
+            });
+        }
+    }, 100);
+};
+const updateCalendarView = (view) => {
+    document.querySelectorAll('.calendar-view-mode button').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(`view-${view}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    setCalendarTitle();
+};
+const setCalendarTitle = () => {
+    if (!calendar) return;
+    const date = calendar.getDate();
+    const title = `${date.getFullYear()}年 ${date.getMonth() + 1}月 ${date.getDate()}日`;
+    calendarTitle.textContent = title;
+};
+const addEventToCalendar = (task) => {
+    if (!calendar) return;
 
-    ws = new WebSocket(wsURL);
-    
-    ws.onopen = () => {
-        console.log("WebSocket Connected");
-        roomStatusEl.textContent = '已连接';
-        roomInfoEl.textContent = `房间: ${pin} (${name})`;
-        joinBtn.style.display = 'none';
-        leaveBtn.style.display = 'inline-block';
-        scheduleStatusUpdate(); // EVENT: Send initial status on connect
-        if (pingIntervalId) clearInterval(pingIntervalId);
-        pingIntervalId = setInterval(() => sendWS('PING'), PING_INTERVAL);
+    // 为任务创建一个具体的完成时间（如果没有的话，使用创建时间）
+    const completedTime = task.completedAt || task.createdAt || new Date().toISOString();
+    const completedDate = new Date(completedTime);
+
+    // 基础事件配置
+    const baseSchedule = {
+        calendarId: '1',
+        title: `✅ ${task.text}`,
+        bgColor: getPriorityColor(task.priority),
+        borderColor: getPriorityColor(task.priority),
+        raw: { taskId: task.id, taskText: task.text, priority: task.priority }
     };
-    ws.onmessage = handleMessage;
-    ws.onclose = handleWSClose;
-     ws.onerror = (error) => {
-        console.error("WebSocket Error:", error);
-        addChatMessage('', `连接错误!`, true);
-        roomStatusEl.textContent = '连接错误';
-        handleWSClose(); // Clean up like close
-    };
-}
 
-const leaveRoom = () => {
-    if (ws) {
-       const tempWs = ws;
-       ws = null; // Prevent onclose from showing error message
-       tempWs.close(1000, "User left");
+    try {
+        // 日视图显示具体时间
+        const endTime = new Date(completedDate.getTime() + 30 * 60000);
+        calendar.createSchedules([{
+            ...baseSchedule,
+            id: String(task.id),
+            isAllDay: false,
+            category: 'time',
+            start: completedDate,
+            end: endTime
+        }]);
+    } catch (error) {
+        console.error('Error creating calendar event:', error);
     }
-    handleWSClose(); // clean up ping, buttons etc
-    roomStatusEl.textContent = '未连接';
-    roomInfoEl.textContent = '';
-    roomPanel.style.display = 'none';
-    currentRoomPin = '';
-     localStorage.removeItem('roomPin'); // Remove auto-join on leave
-}
+};
+const removeEventFromCalendar = (taskId) => { if (!calendar) return; try { calendar.deleteSchedule(String(taskId), '1'); } catch(e) {} };
+const updateEventInCalendar = (task) => {
+    if (!calendar || !task.completed) return;
+    try {
+        calendar.updateSchedule(String(task.id), '1', {
+            title: `✅ ${task.text}`,
+            bgColor: getPriorityColor(task.priority),
+            borderColor: getPriorityColor(task.priority),
+        });
+    } catch(e) {}
+};
+const refreshCalendarEvents = debounce(() => {
+    if (!calendar) return;
+    calendar.clear();
+    setTimeout(() => {
+        tasks.filter(t => t.completed).forEach(addEventToCalendar);
+    }, 50);
+}, 100);
 
-const openJoinModal = () => {
-    userNameInput.value = myName;
-    roomPinInput.value = currentRoomPin;
-    joinModal.classList.add('show');
-}
-const closeJoinModal = () => joinModal.classList.remove('show');
-const submitJoinForm = (e) => {
-    e.preventDefault();
-     if (!joinForm.checkValidity()) {
-       joinForm.reportValidity();
-        return;
-     }
-    const name = userNameInput.value.trim();
-    const pin = roomPinInput.value.trim();
-     connectToRoom(name, pin);
-     closeJoinModal();
-}
- const submitChatForm = (e) => {
-      e.preventDefault();
-      const text = chatInput.value.trim();
-      if(text && ws) {
-          sendWS('CHAT', { text: text });
-          chatInput.value = '';
-      }
- }
+// 初始化滚动条行为（保持简单）
+const initScrollbarBehavior = () => {
+    // 不做任何特殊处理，让CSS样式自然生效
+};
 
 
- // --- Initialization ---
- const loadState = () => {
-     const savedTasks = localStorage.getItem('tasks');
-     tasks = savedTasks ? JSON.parse(savedTasks) : [];
+
+// 显示任务详情弹窗
+const showTaskDetailPopup = (task, event) => {
+    // 移除已存在的弹窗
+    const existingPopup = document.querySelector('.custom-task-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'custom-task-popup';
+    popup.innerHTML = `
+        <div class="popup-content">
+            <div class="popup-header">
+                <span class="priority-dot ${task.priority}"></span>
+                <input type="text" class="popup-title-input" value="${escapeHTML(task.text)}" />
+            </div>
+            <div class="popup-date">
+                ${task.completedAt ? new Date(task.completedAt).toLocaleString('zh-CN') : '未知时间'}
+            </div>
+            <div class="popup-actions">
+                <button class="popup-btn edit-btn">✏️ 编辑</button>
+                <button class="popup-btn delete-btn">🗑️ 删除</button>
+                <button class="popup-btn close-btn">关闭</button>
+            </div>
+        </div>
+    `;
+
+    // 智能定位弹窗
+    document.body.appendChild(popup);
+
+    const rect = event.target ? event.target.getBoundingClientRect() : { left: event.clientX || 0, top: event.clientY || 0, bottom: (event.clientY || 0) + 20 };
+    const popupRect = popup.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = rect.left;
+    let top = rect.bottom + 5;
+
+    // 防止弹窗超出右边界
+    if (left + popupRect.width > viewportWidth) {
+        left = viewportWidth - popupRect.width - 10;
+    }
+
+    // 防止弹窗超出下边界
+    if (top + popupRect.height > viewportHeight) {
+        top = rect.top - popupRect.height - 5;
+    }
+
+    popup.style.position = 'fixed';
+    popup.style.left = `${Math.max(10, left)}px`;
+    popup.style.top = `${Math.max(10, top)}px`;
+    popup.style.zIndex = '1000';
+
+    // 添加事件监听
+    const titleInput = popup.querySelector('.popup-title-input');
+    const editBtn = popup.querySelector('.edit-btn');
+    const deleteBtn = popup.querySelector('.delete-btn');
+    const closeBtn = popup.querySelector('.close-btn');
+
+    let isEditing = false;
+
+    editBtn.addEventListener('click', () => {
+        if (!isEditing) {
+            titleInput.disabled = false;
+            titleInput.focus();
+            titleInput.select();
+            editBtn.textContent = '💾 保存';
+            isEditing = true;
+        } else {
+            const newText = titleInput.value.trim();
+            if (newText && newText !== task.text) {
+                task.text = newText;
+                updateEventInCalendar(task);
+                saveTasks();
+                renderTasks();
+            }
+            titleInput.disabled = true;
+            editBtn.textContent = '✏️ 编辑';
+            isEditing = false;
+        }
+    });
+
+    deleteBtn.addEventListener('click', () => {
+        if (confirm('确定要删除这个任务吗？')) {
+            tasks = tasks.filter(t => t.id !== task.id);
+            removeEventFromCalendar(task.id);
+            saveTasks();
+            renderTasks();
+            popup.remove();
+        }
+    });
+
+    closeBtn.addEventListener('click', () => {
+        popup.remove();
+    });
+
+    // 点击外部关闭弹窗
+    document.addEventListener('click', function closePopup(e) {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('click', closePopup);
+        }
+    });
+
+    titleInput.disabled = true;
+};
+
+// 显示当天所有任务的弹窗
+const showDayTasksPopup = (dayTasks, event, date) => {
+    // 移除已存在的弹窗
+    const existingPopup = document.querySelector('.custom-day-tasks-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+
+    const popup = document.createElement('div');
+    popup.className = 'custom-day-tasks-popup';
+
+    const tasksHtml = dayTasks.map(task => `
+        <div class="day-task-item" data-task-id="${task.id}">
+            <span class="priority-dot ${task.priority}"></span>
+            <span class="task-title">${escapeHTML(task.text)}</span>
+            <span class="task-time">${task.completedAt ? new Date(task.completedAt).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'}) : '未知时间'}</span>
+        </div>
+    `).join('');
+
+    popup.innerHTML = `
+        <div class="popup-content">
+            <div class="popup-header">
+                <h4>${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 完成的任务</h4>
+                <button class="popup-close-btn">&times;</button>
+            </div>
+            <div class="day-tasks-list">
+                ${tasksHtml}
+            </div>
+        </div>
+    `;
+
+    // 智能定位弹窗
+    document.body.appendChild(popup);
+
+    const rect = event.target ? event.target.getBoundingClientRect() : { left: event.clientX || 0, top: event.clientY || 0, bottom: (event.clientY || 0) + 20 };
+    const popupRect = popup.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let left = rect.left;
+    let top = rect.bottom + 5;
+
+    // 防止弹窗超出右边界
+    if (left + popupRect.width > viewportWidth) {
+        left = viewportWidth - popupRect.width - 10;
+    }
+
+    // 防止弹窗超出下边界
+    if (top + popupRect.height > viewportHeight) {
+        top = rect.top - popupRect.height - 5;
+    }
+
+    popup.style.position = 'fixed';
+    popup.style.left = `${Math.max(10, left)}px`;
+    popup.style.top = `${Math.max(10, top)}px`;
+    popup.style.zIndex = '1000';
+
+    // 添加事件监听
+    const closeBtn = popup.querySelector('.popup-close-btn');
+    closeBtn.addEventListener('click', () => {
+        popup.remove();
+    });
+
+    // 点击任务项显示详情
+    popup.querySelectorAll('.day-task-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const taskId = parseInt(item.dataset.taskId);
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                popup.remove();
+                showTaskDetailPopup(task, event);
+            }
+        });
+    });
+
+    // 点击外部关闭弹窗
+    document.addEventListener('click', function closeDayPopup(e) {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('click', closeDayPopup);
+        }
+    });
+};
+
+// --- Initialization ---
+const loadState = () => {
+    const savedTasks = localStorage.getItem('tasks');
+    tasks = savedTasks ? JSON.parse(savedTasks) : [];
+
+    // 加载番茄钟设置和状态
+    const savedTimerSettings = localStorage.getItem('timerSettings');
+    if(savedTimerSettings) {
+        try {
+             const settings = JSON.parse(savedTimerSettings);
+             workDuration = parseInt(settings.workDuration, 10) || 25 * 60;
+             breakDuration = parseInt(settings.breakDuration, 10) || 5 * 60;
+             completedCycles = parseInt(settings.completedCycles, 10) || 0;
+
+             // 恢复番茄钟状态
+             if (settings.timeLeft !== undefined) {
+                 timeLeft = parseInt(settings.timeLeft, 10) || workDuration;
+             } else {
+                 timeLeft = workDuration;
+             }
+
+             if (settings.currentMode) {
+                 currentMode = settings.currentMode;
+             }
+
+             // 恢复会话开始时间（如果存在且是今天的）
+             if (settings.currentSessionStartTime) {
+                 const sessionStartTime = new Date(settings.currentSessionStartTime);
+                 const today = new Date();
+                 // 只有是今天的会话才恢复
+                 if (sessionStartTime.toDateString() === today.toDateString()) {
+                     currentSessionStartTime = sessionStartTime;
+                 }
+             }
+
+             // 恢复时间戳信息
+             if (settings.timerStartTime) {
+                 timerStartTime = new Date(settings.timerStartTime);
+             }
+             if (settings.timerEndTime) {
+                 timerEndTime = new Date(settings.timerEndTime);
+             }
+
+             // 处理后台运行的计时器恢复
+             if (settings.isRunning && timerEndTime) {
+                 const now = new Date();
+
+                 // 检查计时器是否应该已经结束
+                 if (now >= timerEndTime) {
+                     // 计算超时了多长时间
+                     let overtimeMs = now.getTime() - timerEndTime.getTime();
+
+                     // 处理可能的多次模式切换
+                     while (overtimeMs > 0) {
+                         if (currentMode === 'work') {
+                             // 工作时间结束，记录专注时间并切换到休息
+                             if (currentSessionStartTime) {
+                                 const workDuration = Math.floor((timerEndTime - currentSessionStartTime) / 1000);
+                                 if (workDuration > 0) {
+                                     dailyFocusTime += workDuration;
+                                     focusHistory.push({
+                                         date: getTodayDateString(),
+                                         startTime: currentSessionStartTime.toISOString(),
+                                         endTime: timerEndTime.toISOString(),
+                                         duration: workDuration
+                                     });
+                                 }
+                                 currentSessionStartTime = null;
+                             }
+                             currentMode = 'break';
+                             const breakMs = breakDuration * 1000;
+                             if (overtimeMs >= breakMs) {
+                                 // 休息时间也结束了
+                                 overtimeMs -= breakMs;
+                                 timerEndTime = new Date(timerEndTime.getTime() + breakMs);
+                             } else {
+                                 // 还在休息中
+                                 timeLeft = breakDuration - Math.floor(overtimeMs / 1000);
+                                 timerEndTime = new Date(timerEndTime.getTime() + breakMs);
+                                 overtimeMs = 0;
+                             }
+                         } else {
+                             // 休息时间结束，完成一个循环
+                             completedCycles++;
+                             currentMode = 'work';
+                             const workMs = workDuration * 1000;
+                             if (overtimeMs >= workMs) {
+                                 // 工作时间也结束了
+                                 overtimeMs -= workMs;
+                                 timerEndTime = new Date(timerEndTime.getTime() + workMs);
+                             } else {
+                                 // 还在工作中
+                                 timeLeft = workDuration - Math.floor(overtimeMs / 1000);
+                                 timerEndTime = new Date(timerEndTime.getTime() + workMs);
+                                 if (currentMode === 'work') {
+                                     currentSessionStartTime = new Date(timerEndTime.getTime() - workMs);
+                                 }
+                                 overtimeMs = 0;
+                             }
+                         }
+                     }
+
+                     if (overtimeMs <= 0 && timeLeft > 0) {
+                         // 恢复计时器
+                         isRunning = true;
+                         timerStartTime = new Date(timerEndTime.getTime() - timeLeft * 1000);
+                         if (timerInterval) clearInterval(timerInterval);
+                         timerInterval = setInterval(tick, 1000);
+                     } else {
+                         isRunning = false;
+                         timerStartTime = null;
+                         timerEndTime = null;
+                     }
+                 } else {
+                     // 计时器还在运行中
+                     const remainingMs = timerEndTime.getTime() - now.getTime();
+                     timeLeft = Math.ceil(remainingMs / 1000);
+                     isRunning = true;
+                     if (timerInterval) clearInterval(timerInterval);
+                     timerInterval = setInterval(tick, 1000);
+                 }
+             } else {
+                 isRunning = false;
+                 timerStartTime = null;
+                 timerEndTime = null;
+             }
+
+        } catch(e) { }
+    } else {
+        timeLeft = workDuration;
+    }
+
+    // 加载专注时间历史
+    const savedFocusHistory = localStorage.getItem('focusHistory');
+    if (savedFocusHistory) {
+        try {
+            const focusData = JSON.parse(savedFocusHistory);
+            const today = getTodayDateString();
+            if (focusData.date === today) {
+                dailyFocusTime = focusData.totalTime || 0;
+                focusHistory = focusData.history || [];
+            } else {
+                // 新的一天，重置专注时间
+                dailyFocusTime = 0;
+                focusHistory = [];
+            }
+        } catch(e) { }
+    }
+
+    const savedUiSettings = localStorage.getItem('uiSettings');
+    if (savedUiSettings) {
+        try {
+            const ui = JSON.parse(savedUiSettings);
+            currentTheme = ui.theme || 'blue-grey';
+            currentUiMode = ui.mode || 'light';
+        } catch(e) { }
+    }
+
+    const savedCountdownData = localStorage.getItem('countdownData');
+    if (savedCountdownData) {
+        try {
+            const countdownData = JSON.parse(savedCountdownData);
+            targetTitleInput.value = countdownData.title || '';
+            targetDateInput.value = countdownData.date || '';
+        } catch(e) { }
+    }
+
+     applyTheme(currentTheme);
+     applyMode(currentUiMode);
      renderTasks();
-     const savedSettings = localStorage.getItem('timerSettings');
-      let loadedTheme = 'default';
-     if(savedSettings) {
-         try {
-              const settings = JSON.parse(savedSettings);
-              workDuration = parseInt(settings.workDuration, 10) || 25 * 60;
-              breakDuration = parseInt(settings.breakDuration, 10) || 5 * 60;
-              completedCycles = parseInt(settings.completedCycles, 10) || 0;
-              loadedTheme = settings.currentTheme || 'default';
-         } catch(e) { console.error("Error parsing settings", e); workDuration = 25 * 60; breakDuration = 5 * 60; completedCycles = 0;}
-     }
-      timeLeft = workDuration;
-      applyTheme(loadedTheme); updateDisplay();
-      addTaskBtn.disabled = taskInput.value.trim() === '';
-      // Load saved name/pin for modal, but do NOT auto-connect
-       myName = localStorage.getItem('userName') || '';
-       currentRoomPin = localStorage.getItem('roomPin') || '';
-      // if(myName && currentRoomPin) {
-         // connectToRoom(myName, currentRoomPin); // Auto-join is disabled, user must click button
-      // }
- };
+     updateDisplay();
+     addTaskBtn.disabled = taskInput.value.trim() === '';
+     initCalendar();
+     updateCountdown();
+};
 
 // --- Event Listeners ---
- document.addEventListener('DOMContentLoaded', loadState);
- taskForm.addEventListener('submit', addTask);
-  taskInput.addEventListener('input', (e) => { addTaskBtn.disabled = e.target.value.trim() === ''; });
- taskList.addEventListener('click', handleTaskAction);
- priorityBtns.forEach(btn => btn.addEventListener('click', setPriority));
- startPauseBtn.addEventListener('click', toggleTimer);
- resetBtn.addEventListener('click', () => resetTimer(false));
- skipBtn.addEventListener('click', skipTimer);
- settingsOpenBtn.addEventListener('click', openSettings);
- settingsCancelBtn.addEventListener('click', () => { applyTheme(currentTheme); closeSettings(); });
- settingsSaveBtn.addEventListener('click', saveSettings);
- settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) { applyTheme(currentTheme); closeSettings();} });
- themeSelectors.forEach(span => span.addEventListener('click', handleThemeChange));
- document.querySelector('.priority-options').addEventListener('click', (e) => { if (e.target.classList.contains('priority-btn')) { e.preventDefault(); } });
-// Room Events
- joinBtn.addEventListener('click', openJoinModal);
- leaveBtn.addEventListener('click', leaveRoom);
- joinForm.addEventListener('submit', submitJoinForm);
- joinCancelBtn.addEventListener('click', closeJoinModal);
- joinModal.addEventListener('click', (e) => { if(e.target === joinModal) closeJoinModal(); });
- chatForm.addEventListener('submit', submitChatForm);
- // Ensure UI is consistent on manual close
- window.addEventListener('beforeunload', () => {
-    if(ws) ws.close(1000, "Browser closed");
- });
+document.addEventListener('DOMContentLoaded', () => {
+   loadState();
+   new Sortable(taskList, {
+       animation: 150,
+       handle: '.draggable-handle',
+       ghostClass: 'sortable-ghost',
+       onEnd: (evt) => {
+           const item = tasks.splice(evt.oldIndex, 1)[0];
+           tasks.splice(evt.newIndex, 0, item);
+           saveTasks();
+       }
+   });
+   targetDateInput.addEventListener('change', updateCountdown);
+   targetTitleInput.addEventListener('input', updateCountdown);
+});
+taskForm.addEventListener('submit', addTask);
+ taskInput.addEventListener('input', (e) => { addTaskBtn.disabled = e.target.value.trim() === ''; });
+taskList.addEventListener('click', handleTaskAction);
+priorityBtns.forEach(btn => btn.addEventListener('click', setPriority));
+startPauseBtn.addEventListener('click', toggleTimer);
+resetBtn.addEventListener('click', () => resetTimer(false));
+skipBtn.addEventListener('click', skipTimer);
+resetFocusTimeBtn.addEventListener('click', resetDailyFocusTime);
+// Timer Settings Modal
+settingsOpenBtn.addEventListener('click', openTimerSettings);
+settingsCancelBtn.addEventListener('click', closeTimerSettings);
+settingsSaveBtn.addEventListener('click', saveTimerSettingsAction);
+settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) closeTimerSettings(); });
+// New Theme FAB
+themeFabBtn.addEventListener('click', () => themePanel.classList.toggle('show'));
+document.addEventListener('click', (e) => {
+    if (!themeFabBtn.contains(e.target) && !themePanel.contains(e.target)) {
+        themePanel.classList.remove('show');
+    }
+});
+themeSelectorPanel.addEventListener('click', handleThemeChange);
+darkModeCheckbox.addEventListener('change', (e) => {
+    const mode = e.target.checked ? 'dark' : 'light';
+    applyMode(mode);
+    saveUiSettings();
+});
+document.querySelector('.priority-options').addEventListener('click', (e) => { if (e.target.classList.contains('priority-btn')) { e.preventDefault(); } });
+// 滑块事件监听
+workDurationSlider.addEventListener('input', (e) => { workDurationValue.textContent = e.target.value; });
+breakDurationSlider.addEventListener('input', (e) => { breakDurationValue.textContent = e.target.value; });
+// 日历控制事件监听 (优化)
+calendarNav.addEventListener('click', (e) => {
+    if (e.target.id === 'calendar-prev') calendar.prev();
+    if (e.target.id === 'calendar-next') calendar.next();
+    if (e.target.id === 'calendar-today') calendar.today();
+    setCalendarTitle();
+});
+// 移除视图切换事件监听，因为只有日视图
+
+// 页面卸载时保存状态
+window.addEventListener('beforeunload', () => {
+    if (isRunning) {
+        // 如果正在运行，先暂停并保存状态
+        pauseTimer();
+    } else {
+        // 否则直接保存当前状态
+        saveTimerState();
+    }
+});
+
+// 页面可见性变化时的处理
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        // 页面隐藏时保存当前状态，但不暂停计时器
+        saveTimerState();
+    } else {
+        // 页面重新可见时，基于时间戳同步状态
+        if (isRunning) {
+            updateTimerFromTimestamp();
+        }
+    }
+});

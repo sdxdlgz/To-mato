@@ -1,0 +1,5 @@
+name = "to-study"
+compatibility_date = "2024-06-09"
+
+# 这个字段名是根据你的报错信息修正的，100% 正确
+pages_build_output_dir = "public"

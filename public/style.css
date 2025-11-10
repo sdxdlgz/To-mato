@@ -1,127 +1,1621 @@
-/* --- CSS Variables & Themes --- */
-:root {
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Microsoft YaHei";
-    --border-radius-card: 16px;
-    --border-radius-el: 8px;
-    --padding-card: 20px;
-    --shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-    --gap: 20px;
-}
-/* Default - Orange */
-body {
-    --bg-color: #FFFBF2; --card-bg: #FFFFFF; --text-color: #3f3a34; --text-light: #8a837a; --primary-color: #F59E0B; /* Amber */ --primary-light: #FCD34D; --primary-hover: #D97706; --border-color: #fae8c8; --progress-bg: #FEF3C7; --low-p: #22C55E;  /* green */ --medium-p: #F59E0B; /* amber*/ --high-p: #EF4444; /* red */
-}
-/* Theme - Blue */
-body[data-theme="blue"] {
-    --bg-color: #F0F9FF; --card-bg: #FFFFFF; --text-color: #0C4A6E; --text-light: #0369A1; --primary-color: #3B82F6; --primary-light: #93C5FD; --primary-hover: #2563EB; --border-color: #BFDBFE; --progress-bg: #DBEAFE;
-}
-    /* Theme - Green */
-body[data-theme="green"] {
-    --bg-color: #F0FDF4; --card-bg: #FFFFFF; --text-color: #064E3B; --text-light: #047857; --primary-color: #10B981; --primary-light: #6EE7B7; --primary-hover: #059669; --border-color: #A7F3D0; --progress-bg: #D1FAE5;
-}
-    /* Theme - Purple */
-body[data-theme="purple"] {
-    --bg-color: #FBF6FF; --card-bg: #FFFFFF; --text-color: #581C87; --text-light: #6B21A8; --primary-color: #A855F7; --primary-light: #C084FC; --primary-hover: #9333EA; --border-color: #E9D5FF; --progress-bg: #F3E8FF;
+/* --- 引入外部日历库样式 --- */
+@import url("https://uicdn.toast.com/tui-calendar/latest/tui-calendar.css");
+
+/* --- 引入自定义字体 --- */
+@font-face {
+  font-family: 'JetBrainsMapleMono';
+  src: url('./JetBrainsMapleMono-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
 }
 
+/* --- CSS Variables & Themes (大改) --- */
+:root {
+    --font-family: 'JetBrainsMapleMono', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Microsoft YaHei";
+    --font-mono: 'JetBrainsMapleMono', monospace;
+    --border-radius-card: 16px;
+    --border-radius-el: 8px;
+    --padding-card: 24px;
+    --shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    --gap: 20px;
+    --transition-fast: 0.2s ease;
+    --transition-med: 0.4s cubic-bezier(0.65, 0, 0.35, 1);
+}
+/* --- 亮色模式基础色 --- */
+body[data-mode="light"] {
+    --card-bg: #FFFFFF; --text-color: #3f3a34; --text-light: #8a837a; --border-color: #eee9e1; --progress-bg: #f5f2ed;
+}
+/* --- 暗黑模式基础色 --- */
+body[data-mode="dark"] {
+    --bg-color: #1a1a1a; --card-bg: #252525; --text-color: #e0e0e0; --text-light: #a0a0a0; --border-color: #3a3a3a; --progress-bg: #333333;
+}
+/* --- 2. 全局主题色系统 (引入背景色) --- */
+body { --low-p: #84cc16; --medium-p: #eab308; --high-p: #ef4444; }
+/* 默认: 灰蓝 */
+body, body[data-theme="blue-grey"] { --primary-color: #64748b; --primary-light: #cbd5e1; --primary-hover: #475569; --bg-color: #f8f7f2; }
+/* 灰绿 */
+body[data-theme="green-grey"] { --primary-color: #527067; --primary-light: #a3b8b1; --primary-hover: #3a504a; --bg-color: #f3f5f4; }
+/* 尘粉 */
+body[data-theme="dusty-rose"] { --primary-color: #c08497; --primary-light: #e6cde3; --primary-hover: #a5677b; --bg-color: #fbf6f8; }
+/* 赭石 */
+body[data-theme="ochre"] { --primary-color: #d59a61; --primary-light: #f3d9bf; --primary-hover: #b87b41; --bg-color: #fcf8f4; }
+/* 雾霾蓝 */
+body[data-theme="haze-blue"] { --primary-color: #8da9c4; --primary-light: #d8e2ec; --primary-hover: #6a8eab; --bg-color: #f6f8fa; }
+/* 橄榄绿 */
+body[data-theme="olive"] { --primary-color: #8a9a5b; --primary-light: #dbe2b8; --primary-hover: #6b7841; --bg-color: #f7f8f3; }
+/* 暗黑模式下，背景色固定 */
+body[data-mode="dark"] { --bg-color: #1a1a1a; }
+
 /* --- Base Style --- */
-body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; padding-top: 50px; box-sizing: border-box; min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; }
-.container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
-    header { text-align: center; margin-bottom: 20px; color: var(--primary-color); }
-    header h1 { margin-bottom: 5px; color: var(--primary-hover); font-size: 1.8em;}
+body { font-family: var(--font-family); background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; box-sizing: border-box; min-height: 100vh; transition: background-color var(--transition-fast), color var(--transition-fast); }
+.container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { margin-bottom: 5px; color: var(--text-color); font-size: 1.8em;}
     header p { color: var(--text-light); font-size: 0.9em; margin-top: 0; }
 .main-content { display: flex; gap: var(--gap); align-items: flex-start; }
-.card { background-color: var(--card-bg); border-radius: var(--border-radius-card); padding: var(--padding-card); box-shadow: var(--shadow); transition: background-color 0.3s ease; margin-bottom: var(--gap); }
-.todo-section { flex: 3; min-width: 300px; }
-.pomodoro-section-wrapper { flex: 2; min-width: 280px; position: sticky; top: 60px; align-self: flex-start; } /* align-self added */
-    .pomodoro-section {}
-    h3 { margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; color: var(--text-color); font-size: 1.1em; }
-    h3 .icon { color: var(--primary-color); font-size: 1.2em; }
-/* --- Todo --- */
-    .todo-stats { font-size: 0.9em; color: var(--text-light); background-color: var(--progress-bg); padding: 10px 15px; border-radius: var(--border-radius-el); margin-bottom: var(--gap); }
-#task-input, #chat-input, .settings-content input, #join-form input { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius-el); box-sizing: border-box; margin-bottom: 10px; background-color: inherit; color: var(--text-color); font-size: 1em; }
-    #task-input:focus, #chat-input:focus, .settings-content input:focus, #join-form input:focus { outline: none; border-color: var(--primary-color); }
+.card { background-color: var(--card-bg); border-radius: var(--border-radius-card); padding: var(--padding-card); box-shadow: var(--shadow); transition: background-color var(--transition-fast); margin-bottom: var(--gap); border: 1px solid var(--border-color); }
+.left-column { flex: 1; min-width: 320px; }
+.right-column { flex: 1; min-width: 320px; position: sticky; top: 20px; align-self: flex-start; }
+
+/* --- 主题色应用 --- */
+h3 .icon, #task-list input[type="checkbox"] { color: var(--primary-color); accent-color: var(--primary-color); }
+.completion-circle-progress { stroke: var(--primary-color) !important; }
+.btn-primary, .btn-add { background-color: var(--primary-color); border-color: var(--primary-color); }
+.btn-primary:hover, .btn-add:hover { background-color: var(--primary-hover); border-color: var(--primary-hover); }
+/* 确保主题切换时背景色也会变化 */
+body { background-color: var(--bg-color) !important; transition: background-color 0.3s ease; }
+
+/* --- 1. 进度条样式修复 --- */
+.completion-circle-container { position: relative; width: 120px; height: 120px; margin: 0 auto 20px auto; }
+.completion-circle-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.completion-circle-bg { fill: none; stroke: var(--progress-bg); stroke-width: 10; }
+.completion-circle-progress {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+}
+.completion-text-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#completion-percentage { font-size: 2em; font-weight: bold; color: var(--primary-hover); font-family: var(--font-mono); }
+.completion-label { font-size: 0.8em; color: var(--text-light); margin-top: -5px; }
+body[data-mode="dark"] #completion-percentage { color: var(--primary-light); } /* 暗黑模式下颜色修正 */
+
+/* --- Todo (支持沉浸式编辑) --- */
+#task-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius-el); box-sizing: border-box; margin-bottom: 10px; background-color: var(--bg-color); color: var(--text-color); font-size: 1em; }
+    #task-input:focus { outline: none; border-color: var(--primary-color); }
 .priority-options { display: flex; gap: 8px; align-items: center; margin-bottom: 15px; font-size: 0.85em; color: var(--text-light); }
-.priority-btn { background: none; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.9em; transition: all 0.2s ease; color: var(--text-color); }
-    .priority-btn:hover, .priority-btn.active { background-color: var(--primary-light); border-color: var(--primary-light); color: var(--card-bg); }
+.priority-btn { background: none; border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 15px; cursor: pointer; font-size: 0.9em; transition: all var(--transition-fast); color: var(--text-color); }
+    .priority-btn:hover { background-color: var(--primary-light); border-color: var(--primary-color); color: var(--primary-hover); }
+    .priority-btn.active { color: white; border-color: transparent; }
     .priority-btn[data-priority="low"].active { background-color: var(--low-p); border-color: var(--low-p); }
     .priority-btn[data-priority="medium"].active { background-color: var(--medium-p); border-color: var(--medium-p); }
     .priority-btn[data-priority="high"].active { background-color: var(--high-p); border-color: var(--high-p); }
-.btn-add { width: 100%; padding: 10px; background-color: var(--primary-light); color: white; opacity: 0.9; border-radius: var(--border-radius-el);}
-    .btn-add:hover { background-color: var(--primary-color); opacity: 1; }
+.btn-add { width: 100%; padding: 10px; color: white; transition: background-color var(--transition-fast); border-radius: var(--border-radius-el);}
 #task-list { list-style: none; padding: 0; margin-top: 0; }
     #task-list li { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--border-color); gap: 10px; }
     #task-list li:last-child { border-bottom: none; }
-    #task-list input[type="checkbox"] { cursor: pointer; accent-color: var(--primary-color); width: 18px; height: 18px; flex-shrink: 0; }
-    #task-list .task-text { flex-grow: 1; word-break: break-word; }
+    #task-list .task-text { flex-grow: 1; word-break: break-word; cursor: pointer; transition: color 0.2s ease; }
+    #task-list .task-text:hover { color: var(--primary-color); }
     #task-list .task-text.completed { text-decoration: line-through; color: var(--text-light); opacity: 0.7; }
-    .priority-dot { width: 8px; height: 8px; border-radius: 50%; background-color: grey; flex-shrink: 0; }
-    .priority-dot.low {background-color: var(--low-p);}
-    .priority-dot.medium {background-color: var(--medium-p);}
-    .priority-dot.high {background-color: var(--high-p);}
-    .delete-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 1.2em; padding: 0 5px; opacity: 0.6; transition: opacity 0.2s ease; flex-shrink: 0; }
+    .edit-task-input { flex-grow: 1; padding: 4px 6px; border: 2px solid var(--primary-color); border-radius: 4px; background-color: var(--progress-bg); color: var(--text-color); font-family: var(--font-family); font-size: 1em; box-shadow: 0 0 0 3px var(--primary-light); transition: all 0.2s ease; }
+    .edit-task-input:focus { outline: none; box-shadow: 0 0 0 4px var(--primary-light); }
+    .priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; cursor: pointer; }
+    .priority-dot.low {background-color: var(--low-p);} .priority-dot.medium {background-color: var(--medium-p);} .priority-dot.high {background-color: var(--high-p);}
+    .delete-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 1.2em; padding: 0 5px; opacity: 0.6; transition: opacity var(--transition-fast); flex-shrink: 0; }
     .delete-btn:hover { color: var(--high-p); opacity: 1; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); font-size: 0.95em; }
     .empty-state div { font-size: 3em; margin-bottom: 10px; color: var(--border-color); }
+.draggable-handle { cursor: grab; color: var(--border-color); font-size: 1.5em; line-height: 1; padding: 0 5px; margin-right: 5px; transition: color var(--transition-fast); }
+.draggable-handle:hover { color: var(--primary-color); }
+.sortable-ghost { opacity: 0.4; background-color: var(--progress-bg); border-radius: var(--border-radius-el); }
+
 /* --- Pomodoro --- */
-    .timer-header{ display: flex; justify-content: space-between; align-items: center; }
-    .timer-header h3 { margin-bottom: 5px; }
-    .settings-btn { background: none; border: none; cursor: pointer; font-size: 1.4em; color: var(--border-color); padding: 0;}
-    .settings-btn:hover { color: var(--primary-color); }
+.timer-header{ display: flex; justify-content: space-between; align-items: center; }
+.timer-header h3 { margin-bottom: 5px; }
+.settings-btn { background: none; border: none; cursor: pointer; font-size: 1.4em; color: var(--text-light); opacity: 0.7; padding: 0;}
+.settings-btn:hover { color: var(--primary-color); opacity: 1; }
 .timer-status{ font-size: 0.85em; color: var(--text-light); text-align: center; margin-bottom: 5px; }
-#timer-display { font-size: 4em; font-weight: bold; text-align: center; margin: 10px 0; color: var(--primary-hover); font-family: monospace, var(--font-family); line-height: 1; }
-.progress-bar { height: 8px; background-color: var(--progress-bg); border-radius: 4px; overflow: hidden; margin-bottom: 15px; }
-    .progress-bar-fill { height: 100%; width: 0%; background-color: var(--primary-color); transition: width 0.5s linear; }
-.timer-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-    .timer-controls .btn-start { grid-column: span 2; }
-.btn { padding: 8px 15px; border: 1px solid var(--border-color); border-radius: var(--border-radius-el); cursor: pointer; font-size: 1em; background-color: var(--card-bg); color: var(--text-color); transition: all 0.2s ease; }
-    .btn:hover:not(:disabled){ background-color: var(--progress-bg); border-color: var(--primary-color); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); color: white; }
-    .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); border-color: var(--primary-hover); color: white; }
+.focus-time-status{
+    font-size: 0.85em;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-small {
+    background: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.75em;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+.btn-small:hover {
+    background: var(--danger-color);
+    color: white;
+    border-color: var(--danger-color);
+    opacity: 1;
+}
+#timer-display { font-size: 4em; font-weight: bold; text-align: center; margin: 10px 0; color: var(--primary-hover); font-family: var(--font-mono); line-height: 1; }
+.timer-controls { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+.timer-controls .sub-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .timer-info { font-size: 0.8em; color: var(--text-light); text-align: center; }
-    /* Modals */
-    .settings-modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.2); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
-    .settings-modal.show { display: flex; }
-    .settings-content { background-color: var(--card-bg); padding: var(--padding-card); border-radius: var(--border-radius-card); box-shadow: var(--shadow); width: 90%; max-width: 350px; }
-    .settings-content label, #join-form label { display: block; margin-bottom: 5px; color: var(--text-light); font-size: 0.9em;}
-    .settings-content input[type="number"] { margin-bottom: 15px;}
-    .settings-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;}
-    .theme-selector { margin-bottom: 10px; }
-    .theme-selector span { display: inline-block; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; margin-right: 8px; border: 2px solid transparent; transition: border-color 0.2s ease; }
-        .theme-selector span:hover, .theme-selector span.active { border-color: var(--text-light); }
-        .theme-default { background-color: #F59E0B;}
-        .theme-blue { background-color: #3B82F6;}
-        .theme-green { background-color: #10B981;}
-        .theme-purple { background-color: #A855F7;}
-/* --- Room --- */
-.room-bar { position: fixed; top:0; left:0; width: 100%; background: var(--primary-light); color: var(--card-bg); padding: 8px 15px; text-align: right; box-sizing: border-box; font-size: 0.9em; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
-    .btn-room { background: var(--card-bg); color: var(--primary-color); border:none; border-radius: 4px; padding: 4px 10px; margin-left: 10px; cursor: pointer; font-size: 0.85em;}
-    .btn-room:hover { opacity: 0.8;}
-#user-list { list-style: none; padding: 0; margin: 0 0 15px 0; font-size: 0.85em; color: var(--text-light); max-height: 120px; overflow-y: auto;}
-#user-list li { padding: 4px 0; display: flex; justify-content: space-between; border-bottom: 1px dotted var(--border-color); flex-wrap: wrap; gap: 5px;}
-#user-list li:last-child { border-bottom: none; }
-#user-list .user-name { flex-grow: 1; }
-#user-list .user-tasks { color: var(--primary-hover); }
-#user-list .user-status { font-family: monospace; white-space: nowrap;}
-#user-count { font-size: 0.8em; color: var(--text-light); margin-left: auto;}
-    #chat-box { height: 150px; border: 1px solid var(--border-color); border-radius: var(--border-radius-el); margin-bottom: 10px; overflow-y: scroll; padding: 10px; font-size: 0.8em; background-color: var(--progress-bg); line-height: 1.4; word-break: break-word;}
-    .chat-message { margin-bottom: 4px;}
-    .chat-message strong { color: var(--text-color); }
-    .chat-message i { color: var(--text-light); opacity: 0.9;}
-    #chat-form {display: flex; gap: 8px;}
-    #chat-input { margin-bottom: 0;}
-    #chat-form button { padding: 8px 12px;}
-    
-    /* --- Responsive --- */
-    @media (max-width: 768px) {
-    body { padding-top: 40px;}
-    .main-content { flex-direction: column; }
-    .pomodoro-section-wrapper { position: static; width: 100%; box-sizing: border-box; }
-    .todo-section { width: 100%; box-sizing: border-box; }
-    #timer-display { font-size: 3.5em;}
-    .container { margin-top: 10px;}
-    .room-bar { padding: 5px 10px; font-size: 0.8em;}
-    .btn-room { padding: 3px 8px; font-size: 0.8em; }
-     #user-list li { flex-direction: column; align-items: flex-start; }
+.btn {
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-el);
+    cursor: pointer;
+    font-size: 1em;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    transition: all var(--transition-fast);
+}
+.btn:hover:not(:disabled){
+    background-color: var(--primary-light);
+    border-color: var(--primary-color);
+    color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: white;
+}
+
+/* --- Modals --- */
+.settings-modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.2); backdrop-filter: blur(2px); align-items: center; justify-content: center; }
+.settings-modal.show { display: flex; }
+.settings-content { background-color: var(--card-bg); padding: var(--padding-card); border-radius: var(--border-radius-card); box-shadow: var(--shadow); width: 90%; max-width: 350px; border: 1px solid var(--border-color); }
+.settings-content label { display: block; margin-bottom: 5px; color: var(--text-light); font-size: 0.9em;}
+.settings-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;}
+.slider-container { margin-bottom: 15px; }
+.slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.slider-label span:last-child { font-family: var(--font-mono); color: var(--primary-color); font-weight: bold; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: var(--progress-bg); border-radius: 4px; outline: none; transition: opacity var(--transition-fast); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--primary-color); cursor: pointer; border-radius: 50%; transition: background-color var(--transition-fast); }
+input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: var(--primary-color); cursor: pointer; border-radius: 50%; border: none; }
+
+/* --- Floating Theme Button --- */
+.theme-fab-container { position: fixed; bottom: 20px; right: 20px; z-index: 99; }
+.theme-panel { position: absolute; bottom: calc(100% + 10px); right: 0; background-color: var(--card-bg); border-radius: var(--border-radius-card); padding: var(--padding-card); box-shadow: var(--shadow); border: 1px solid var(--border-color); opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity var(--transition-fast), transform var(--transition-fast); width: 220px; }
+.theme-panel.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.theme-panel label { display: block; margin-bottom: 10px; color: var(--text-light); font-size: 0.9em; }
+.theme-selector { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+.theme-selector span { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color var(--transition-fast); }
+.theme-selector span:hover, .theme-selector span.active { border-color: var(--text-color); }
+.theme-blue-grey { background-color: #64748b; } .theme-green-grey { background-color: #527067; } .theme-dusty-rose { background-color: #c08497; } .theme-ochre { background-color: #d59a61; } .theme-haze-blue { background-color: #8da9c4; } .theme-olive { background-color: #8a9a5b; }
+.dark-mode-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.dark-mode-toggle .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.dark-mode-toggle .toggle-switch input { opacity: 0; width: 0; height: 0; }
+.dark-mode-toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border-color); transition: var(--transition-fast); border-radius: 24px; }
+.dark-mode-toggle .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: var(--transition-fast); border-radius: 50%; }
+.dark-mode-toggle input:checked + .slider { background-color: var(--primary-color); }
+.dark-mode-toggle input:checked + .slider:before { transform: translateX(20px); }
+#theme-fab-btn { width: 56px; height: 56px; border-radius: 50%; background-color: var(--primary-color); color: white; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform var(--transition-fast), background-color var(--transition-fast); }
+#theme-fab-btn:hover { transform: scale(1.05); }
+
+/* --- 4. 日历样式终极优化 --- */
+.calendar-section { flex: 1.5; min-width: 400px; }
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 0 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.calendar-nav {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+.calendar-nav button {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-light);
+    padding: 5px 10px;
+    border-radius: var(--border-radius-el);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+.calendar-nav button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+/* 日视图标签样式 */
+.calendar-view-mode .view-label {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 5px 10px;
+    border-radius: var(--border-radius-el);
+    font-size: 0.9em;
+    font-family: var(--font-family);
+    font-weight: 500;
+}
+#calendar-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+    margin: 0 10px;
+}
+.calendar-view-mode {
+    display: flex;
+    gap: 5px;
+}
+#calendar {
+    height: 600px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-card);
+    padding: 10px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 美化日历滚动条，使其与界面风格一致 */
+.tui-full-calendar-scrollable-area::-webkit-scrollbar {
+    width: 6px !important;
+    background-color: var(--progress-bg) !important;
+}
+
+.tui-full-calendar-scrollable-area::-webkit-scrollbar-track {
+    background-color: var(--progress-bg) !important;
+    border-radius: 3px !important;
+}
+
+.tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb {
+    background-color: var(--border-color) !important;
+    border-radius: 3px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb:hover {
+    background-color: var(--primary-color) !important;
+}
+
+/* Firefox滚动条美化 */
+.tui-full-calendar-scrollable-area {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--border-color) var(--progress-bg) !important;
+}
+
+/* 确保时间轴显示正常 */
+.tui-full-calendar-timegrid-hour {
+    display: block !important;
+    visibility: visible !important;
+    color: var(--text-light) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 4px 8px !important;
+    background-color: var(--bg-color) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.tui-full-calendar-timegrid-half-hour {
+    display: block !important;
+    visibility: visible !important;
+    color: var(--text-light) !important;
+    opacity: 0.6 !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+}
+
+.tui-full-calendar-timegrid-timezone {
+    display: block !important;
+    visibility: visible !important;
+    background-color: var(--bg-color) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+/* 修复周/日视图时间轴显示 */
+.tui-full-calendar-timegrid-hour {
+    color: var(--text-light) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    display: block !important;
+    visibility: visible !important;
+    padding: 4px 8px !important;
+    background-color: var(--bg-color) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+.tui-full-calendar-timegrid-half-hour {
+    color: var(--text-light) !important;
+    opacity: 0.6 !important;
+    font-size: 11px !important;
+    display: block !important;
+    visibility: visible !important;
+    padding: 2px 8px !important;
+}
+
+.tui-full-calendar-timegrid-timezone {
+    display: block !important;
+    visibility: visible !important;
+    background-color: var(--bg-color) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+/* 时间格子样式 */
+.tui-full-calendar-time-date {
+    border-right: 1px solid var(--border-color) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    background-color: var(--card-bg) !important;
+    transition: background-color 0.2s ease !important;
+    min-height: 40px !important;
+    padding: 2px !important;
+}
+
+.tui-full-calendar-time-date:hover {
+    background-color: var(--progress-bg) !important;
+}
+
+/* 时间事件容器区域 */
+.tui-full-calendar-time-date-schedule-area {
+    min-height: 36px !important;
+    padding: 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+/* 减少网格线的突兀感 */
+.tui-full-calendar-grid-line {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.tui-full-calendar-timegrid-line {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 所有视图的事件显示优化 */
+.tui-full-calendar-month .tui-full-calendar-weekday-schedule,
+.tui-full-calendar-week .tui-full-calendar-weekday-schedule,
+.tui-full-calendar-week .tui-full-calendar-allday-schedule {
+    display: flex !important;
+    align-items: center !important;
+    padding: 2px 4px !important;
+    margin: 1px 0 !important;
+    background: none !important;
+    border: none !important;
+}
+
+/* 圆点样式 - 适用于所有视图 */
+.tui-full-calendar-month .tui-full-calendar-weekday-schedule-bullet,
+.tui-full-calendar-week .tui-full-calendar-weekday-schedule-bullet,
+.tui-full-calendar-week .tui-full-calendar-allday-schedule-bullet,
+.tui-full-calendar-time .tui-full-calendar-time-schedule-bullet {
+    display: inline-block !important;
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 4px !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    border: 1px solid transparent !important;
+}
+
+/* 大尺寸圆点 - 用于更好的点击判定 */
+.task-dot-large {
+    width: 16px !important;
+    height: 16px !important;
+    position: relative !important;
+}
+
+/* 增加点击区域 */
+.task-dot-large::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -4px !important;
+    left: -4px !important;
+    right: -4px !important;
+    bottom: -4px !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+}
+
+/* 移除圆点悬停特效 */
+
+/* 隐藏月视图和周视图全天区域的标题 */
+.tui-full-calendar-month .tui-full-calendar-weekday-schedule-title,
+.tui-full-calendar-week .tui-full-calendar-allday .tui-full-calendar-weekday-schedule-title {
+    display: none !important;
+}
+
+/* 周视图时间区域 - 只显示圆点 */
+.tui-full-calendar-week .tui-full-calendar-time .tui-full-calendar-weekday-schedule-title {
+    display: none !important;
+}
+
+/* 日视图时间区域保留标题 */
+.tui-full-calendar-day .tui-full-calendar-time .tui-full-calendar-weekday-schedule-title {
+    font-size: 0.85em !important;
+    margin-left: 6px !important;
+    display: inline !important;
+}
+
+/* 任务圆点通用样式 */
+.task-dot {
+    cursor: pointer !important;
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+/* 确保圆点完整显示 */
+.tui-full-calendar-weekday-schedule-bullet {
+    position: relative !important;
+    z-index: 20 !important;
+    overflow: visible !important;
+}
+
+/* 小圆点样式 - 用于日视图 */
+.task-dot-small {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+/* 时间事件样式优化 */
+.tui-full-calendar-time-schedule {
+    padding: 10px 15px !important;
+    border-radius: 6px !important;
+    font-size: 0.9em !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+    transition: all 0.2s ease !important;
+    margin: 2px 0 !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    min-height: 32px !important;
+    width: calc(100% - 4px) !important;
+    box-sizing: border-box !important;
+}
+
+.tui-full-calendar-time-schedule:hover {
+    background-color: var(--progress-bg) !important;
+    border-color: var(--primary-color) !important;
+    transform: translateX(1px) !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 任务事件文字样式 */
+.tui-full-calendar-time-schedule span {
+    font-weight: 500 !important;
+    font-size: 0.9em !important;
+    line-height: 1.4 !important;
+    color: var(--text-color) !important;
+}
+
+
+
+
+
+.time-event-title {
+    margin-left: 6px !important;
+    font-size: 0.85em !important;
+    color: var(--text-color) !important;
+}
+
+/* 月视图任务数量显示 */
+.task-count-display {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.7em;
+    font-family: var(--font-family);
+    padding: 1px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 5;
+}
+
+.task-count-display:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+/* 全天事件区域样式 */
+.tui-full-calendar-weekday-schedule {
+    padding: 4px 8px !important;
+    min-height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+/* 通用样式覆盖 */
+.tui-full-calendar-weekday-schedule-title {
+    color: var(--text-color) !important;
+    font-weight: 500 !important;
+    font-size: 0.9em !important;
+}
+
+.tui-full-calendar-month-dayname,
+.tui-full-calendar-dayname {
+    border: 1px solid var(--border-color) !important;
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    padding: 8px !important;
+    font-weight: 500 !important;
+}
+
+.tui-full-calendar-dayname-date {
+    font-size: 1.2em !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+}
+
+.tui-full-calendar-dayname-name {
+    font-size: 0.9em !important;
+    color: var(--text-light) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.tui-full-calendar-grid-line,
+.tui-full-calendar-time-area,
+.tui-full-calendar-dayname-left,
+.tui-full-calendar-grid-left {
+    border-color: var(--border-color) !important;
+}
+
+.tui-full-calendar-today .tui-full-calendar-dayname-date {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 6px !important;
+}
+
+.tui-full-calendar-month-creation-guide {
+    background-color: var(--progress-bg) !important;
+}
+/* === 暗黑模式日历全面适配 === */
+
+/* 1. 日历根容器 */
+body[data-mode="dark"] #calendar,
+body[data-mode="dark"] .tui-full-calendar {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 2. 日历主体布局 */
+body[data-mode="dark"] .tui-full-calendar-layout,
+body[data-mode="dark"] .tui-full-calendar-container,
+body[data-mode="dark"] .tui-full-calendar-week-view,
+body[data-mode="dark"] .tui-full-calendar-day-view {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* 3. 日期头部区域 */
+body[data-mode="dark"] .tui-full-calendar-dayname,
+body[data-mode="dark"] .tui-full-calendar-dayname-date,
+body[data-mode="dark"] .tui-full-calendar-dayname-name {
+    background-color: var(--bg-color) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 4. 今日高亮 */
+body[data-mode="dark"] .tui-full-calendar-today .tui-full-calendar-dayname-date {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border-radius: 4px !important;
+}
+
+/* 5. 时间轴区域 */
+body[data-mode="dark"] .tui-full-calendar-timegrid,
+body[data-mode="dark"] .tui-full-calendar-timegrid-timezone,
+body[data-mode="dark"] .tui-full-calendar-timegrid-hour,
+body[data-mode="dark"] .tui-full-calendar-timegrid-half-hour {
+    background-color: var(--bg-color) !important;
+    color: var(--text-light) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 6. 时间格子 */
+body[data-mode="dark"] .tui-full-calendar-time-date,
+body[data-mode="dark"] .tui-full-calendar-time-date-schedule-area {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-time-date:hover {
+    background-color: var(--progress-bg) !important;
+}
+
+/* 7. 网格线 */
+body[data-mode="dark"] .tui-full-calendar-grid-line,
+body[data-mode="dark"] .tui-full-calendar-timegrid-line,
+body[data-mode="dark"] .tui-full-calendar-time-area {
+    border-color: var(--border-color) !important;
+}
+
+/* 8. 任务事件样式 */
+body[data-mode="dark"] .tui-full-calendar-time-schedule {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-color: var(--border-color) !important;
+    border-radius: 6px !important;
+    min-height: 32px !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-time-schedule:hover {
+    background-color: var(--progress-bg) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* 暗黑模式下的时间格子 */
+body[data-mode="dark"] .tui-full-calendar-time-date {
+    min-height: 40px !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-time-date-schedule-area {
+    min-height: 36px !important;
+}
+
+/* 9. All Day 区域 */
+body[data-mode="dark"] .tui-full-calendar-weekday-schedule-area {
+    background-color: var(--bg-color) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 10. 暗黑模式滚动条优化 */
+body[data-mode="dark"] .tui-full-calendar-scrollable-area::-webkit-scrollbar {
+    width: 4px !important;
+    background-color: transparent !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-scrollable-area::-webkit-scrollbar-track {
+    background-color: transparent !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 2px !important;
+    border: none !important;
+    opacity: 0 !important;
+    transition: background-color 0.3s ease, opacity 0.3s ease !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-scrollable-area:hover::-webkit-scrollbar-thumb {
+    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+body[data-mode="dark"] .tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb:active {
+    background-color: rgba(255, 255, 255, 0.35) !important;
+    opacity: 1 !important;
+}
+
+/* 暗黑模式 Firefox 滚动条 */
+body[data-mode="dark"] .tui-full-calendar-scrollable-area {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255, 255, 255, 0.08) transparent !important;
+}
+
+/* 高级滚动条效果 - 滚动时才显示 */
+.tui-full-calendar-scrollable-area {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* 使用 CSS 动画实现更平滑的滚动条显示/隐藏 */
+@keyframes scrollbar-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scrollbar-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* 滚动时显示滚动条 */
+.tui-full-calendar-scrollable-area.scrolling::-webkit-scrollbar-thumb {
+    opacity: 1 !important;
+    animation: scrollbar-fade-in 0.2s ease !important;
+}
+
+/* 停止滚动后延迟隐藏 */
+.tui-full-calendar-scrollable-area:not(.scrolling)::-webkit-scrollbar-thumb {
+    animation: scrollbar-fade-out 0.5s ease 1s forwards !important;
+}
+
+/* 移动端滚动条完全隐藏 */
+@media (max-width: 768px) {
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar {
+        width: 0px !important;
+        background: transparent !important;
+    }
+
+    .tui-full-calendar-scrollable-area {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+}
+
+/* 11. 重置所有TUI Calendar元素的背景 */
+body[data-mode="dark"] .tui-full-calendar * {
+    background-color: transparent !important;
+}
+
+/* 12. 特定元素保持背景 */
+body[data-mode="dark"] .tui-full-calendar-layout,
+body[data-mode="dark"] .tui-full-calendar-container,
+body[data-mode="dark"] .tui-full-calendar-dayname,
+body[data-mode="dark"] .tui-full-calendar-timegrid,
+body[data-mode="dark"] .tui-full-calendar-time-date {
+    background-color: var(--card-bg) !important;
+}
+
+/* 13. 任务圆点保持原色 */
+body[data-mode="dark"] .task-dot,
+body[data-mode="dark"] .tui-full-calendar-weekday-schedule-bullet {
+    background-color: inherit !important;
+    border-color: inherit !important;
+}
+
+/* --- 自定义任务弹窗样式 --- */
+.custom-task-popup {
+    position: fixed;
+    z-index: 1000;
+    max-width: 300px;
+    min-width: 250px;
+    font-family: var(--font-family);
+}
+.popup-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-card);
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    font-family: var(--font-family);
+}
+.popup-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.popup-title-input {
+    flex: 1;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    font-size: 1em;
+    font-family: var(--font-family);
+    padding: 4px 0;
+    outline: none;
+}
+.popup-title-input:not(:disabled) {
+    border-bottom: 1px solid var(--primary-color);
+    background-color: var(--progress-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.popup-date {
+    font-size: 0.85em;
+    color: var(--text-light);
+    margin-bottom: 12px;
+    padding-left: 16px;
+}
+.popup-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+.popup-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-el);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-family: var(--font-family);
+    transition: all var(--transition-fast);
+}
+.popup-btn:hover {
+    background-color: var(--primary-light);
+    border-color: var(--primary-color);
+    color: var(--primary-hover);
+}
+.popup-btn.delete-btn:hover {
+    background-color: var(--high-p);
+    border-color: var(--high-p);
+    color: white;
+}
+
+/* --- 当天任务列表弹窗样式 --- */
+.custom-day-tasks-popup {
+    position: fixed;
+    z-index: 1000;
+    max-width: 350px;
+    min-width: 280px;
+    font-family: var(--font-family);
+}
+.custom-day-tasks-popup .popup-content {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-card);
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(10px);
+    font-family: var(--font-family);
+}
+.custom-day-tasks-popup .popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+.custom-day-tasks-popup .popup-header h4 {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1em;
+    font-family: var(--font-family);
+}
+.popup-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    font-family: var(--font-family);
+    color: var(--text-light);
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+.popup-close-btn:hover {
+    background-color: var(--progress-bg);
+    color: var(--text-color);
+}
+.day-tasks-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+.day-task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 4px;
+    border-radius: var(--border-radius-el);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+.day-task-item:hover {
+    background-color: var(--progress-bg);
+}
+.day-task-item .task-title {
+    flex: 1;
+    color: var(--text-color);
+    font-size: 0.9em;
+}
+.day-task-item .task-time {
+    color: var(--text-light);
+    font-size: 0.8em;
+    font-family: var(--font-mono);
+}
+
+/* --- Countdown Timer --- */
+.countdown-section h3 {
+    text-align: center;
+    margin-bottom: 15px;
+}
+.countdown-timer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.countdown-timer label {
+    font-size: 0.9em;
+    color: var(--text-light);
+}
+#target-title,
+#target-date {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-el);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    width: 80%;
+    text-align: center;
+}
+#countdown-display {
+    font-size: 1.1em;
+    color: var(--text-color);
+    margin-top: 10px;
+    text-align: center;
+}
+.countdown-days {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 1.5em;
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 1024px) and (min-width: 769px) {
+    .main-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .right-column {
+        position: static;
+        width: 100%;
+        box-sizing: border-box;
+        max-width: none;
+    }
+
+    /* 平板端日历优化 */
+    #calendar {
+        height: 500px;
+        margin: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        margin: 0;
+        padding: max(20px, env(safe-area-inset-top)) 0 max(80px, env(safe-area-inset-bottom) + 60px) 0;
+        min-height: calc(100vh - 100px);
+        max-width: 100vw;
+        width: 100vw;
+        box-sizing: border-box;
+        display: block;
+    }
+
+    header {
+        text-align: center;
+        margin: 0 auto 20px auto;
+        width: calc(100vw - 40px);
+        max-width: calc(100vw - 40px);
+        display: block;
+    }
+
+    header h1,
+    header p {
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    header h1 {
+        font-size: 1.8em;
+        margin-bottom: 6px;
+    }
+
+    header p {
+        font-size: 0.85em;
+        margin: 0;
+        padding: 0 15px;
+        line-height: 1.3;
+    }
+
+    .main-content {
+        width: 100%;
+        max-width: 100%;
+        display: block;
+    }
+
+    .left-column,
+    .right-column {
+        width: 100%;
+        max-width: 100%;
+        position: static;
+        display: block;
+        margin: 0;
+        padding: 0;
+    }
+
+    .card,
+    .card.calendar-section,
+    .pomodoro-section.card {
+        width: calc(100vw - 40px);
+        max-width: calc(100vw - 40px);
+        margin: 0 auto 20px auto;
+        padding: 15px;
+        border-radius: 12px;
+        box-sizing: border-box;
+    }
+
+    .calendar-section {
+        text-align: center;
+    }
+
+    .calendar-controls {
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .calendar-nav {
+        order: 1;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    #calendar-title {
+        order: 2;
+        text-align: center;
+        font-size: 1.1em;
+        font-weight: 600;
+        margin: 8px 0;
+        width: 100%;
+    }
+
+    .calendar-view-mode {
+        order: 3;
+        justify-content: center;
+    }
+
+    #calendar {
+        height: 320px;
+        padding: 5px;
+        margin: 0;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+
+
+    /* 移动端番茄钟优化 */
+    .pomodoro-section {
+        text-align: center;
+    }
+
+    .timer-header {
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .timer-header h3 {
+        margin: 0;
+        font-size: 1.1em;
+    }
+
+    .timer-status {
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+
+    .focus-time-status {
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .btn-small {
+        font-size: 0.7em;
+        padding: 3px 8px;
+    }
+
+    #timer-display {
+        font-size: 3em;
+        margin: 15px 0;
+        text-align: center;
+    }
+
+    .timer-controls {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .timer-controls button {
+        min-width: 80px;
+        padding: 10px 15px;
+        font-size: 0.9em;
+    }
+
+    .sub-controls {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .timer-info {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 0.85em;
+    }
+
+    /* 移动端任务列表优化 */
+    .card h3 {
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 1.1em;
+    }
+
+    .task-input-container {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+
+    #task-input {
+        width: 100%;
+        font-size: 16px; /* 防止iOS缩放 */
+        padding: 12px;
+        text-align: center;
+        border-radius: 8px;
+    }
+
+    #task-input::placeholder {
+        text-align: center;
+    }
+
+    #task-input:focus {
+        text-align: left;
+    }
+
+    #task-input:focus::placeholder {
+        text-align: left;
+    }
+
+    #add-task-btn {
+        width: 100%;
+        padding: 12px;
+        font-size: 1em;
+        border-radius: 8px;
+    }
+
+    .priority-options {
+        justify-content: center;
+        gap: 8px;
+        margin: 15px 0;
+        text-align: center;
+        flex-wrap: wrap;
+    }
+
+    .priority-btn {
+        min-width: 60px;
+        padding: 8px 12px;
+        border-radius: 6px;
+    }
+
+    /* 移动端任务项优化 */
+    .task-item {
+        padding: 12px;
+        margin: 8px 0;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .task-item .task-text {
+        font-size: 1em;
+        line-height: 1.4;
+        text-align: left;
+        flex: 1;
+    }
+
+    .task-actions {
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .task-actions button {
+        min-width: 36px;
+        height: 36px;
+        font-size: 1em;
+        border-radius: 6px;
+    }
+
+    /* 空状态居中 */
+    .empty-state {
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .empty-state div {
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+
+    /* 完成度圆环居中 */
+    .completion-circle-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    /* 移动端主题按钮 */
+    .theme-fab-container {
+        bottom: max(80px, env(safe-area-inset-bottom) + 60px); /* 避开导航栏 */
+        right: 20px;
+        z-index: 1000;
+    }
+
+    .theme-fab {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2em;
+    }
+}
+
+/* 超小屏幕优化 (iPhone SE等) */
+@media (max-width: 480px) {
+    .container {
+        padding: 15px 0 70px 0;
+        min-height: calc(100vh - 85px);
+    }
+
+    header {
+        margin-bottom: 12px;
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+    }
+
+    header h1 {
+        font-size: 1.6em;
+        margin-bottom: 4px;
+    }
+
+    header p {
+        font-size: 0.8em;
+        padding: 0 10px;
+    }
+
+    .card,
+    .card.calendar-section {
+        width: calc(100vw - 20px);
+        max-width: calc(100vw - 20px);
+        margin: 0 auto 15px auto;
+        padding: 12px;
+    }
+
+    /* 超小屏幕日历 */
+    #calendar {
+        height: 280px;
+        padding: 3px;
+    }
+
+    /* 日历控制区域优化 */
+    .calendar-controls {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .calendar-nav {
+        order: 1;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .calendar-nav button {
+        min-width: 40px;
+        height: 40px;
+        font-size: 1.2em;
+    }
+
+    #calendar-title {
+        order: 2;
+        text-align: center;
+        font-size: 1em;
+        margin: 5px 0;
+        font-weight: 600;
+    }
+
+    .calendar-view-mode {
+        order: 3;
+        justify-content: center;
+    }
+
+    /* 超小屏幕番茄钟 */
+    #timer-display {
+        font-size: 2.5em;
+        margin: 10px 0;
+    }
+
+    .timer-info {
+        font-size: 0.8em;
+        gap: 10px;
+    }
+
+    /* 超小屏幕任务 */
+    .task-item {
+        padding: 10px;
+        margin: 6px 0;
+    }
+
+    .task-actions button {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.9em;
+    }
+
+    /* 弹窗优化 */
+    .custom-task-popup,
+    .custom-day-tasks-popup {
+        max-width: calc(100vw - 20px);
+        margin: 10px;
+    }
+
+    .popup-content {
+        padding: 12px;
+    }
+
+    .popup-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .popup-btn {
+        width: 100%;
+        padding: 10px;
+    }
+}
+
+/* 移动端日历事件优化 */
+@media (max-width: 768px) {
+    /* 只隐藏滚动条 */
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar {
+        width: 0px !important;
+        display: none !important;
+    }
+
+    .tui-full-calendar-scrollable-area {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    /* 日历容器约束 */
+    .tui-full-calendar {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .tui-full-calendar-layout {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .tui-full-calendar-weekday {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    /* 时间事件在移动端的优化 */
+    .tui-full-calendar-time-schedule {
+        padding: 8px 10px !important;
+        margin: 2px 0 !important;
+        min-height: 36px !important;
+        font-size: 0.9em !important;
+        border-radius: 6px !important;
+        max-width: calc(100% - 4px) !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 时间轴在移动端的优化 */
+    .tui-full-calendar-timegrid-hour {
+        font-size: 11px !important;
+        padding: 4px 2px !important;
+        width: 50px !important; /* 固定时间轴宽度 */
+    }
+
+    .tui-full-calendar-timegrid-half-hour {
+        font-size: 9px !important;
+        padding: 2px !important;
+        width: 50px !important;
+    }
+
+    /* 日期头部在移动端的优化 */
+    .tui-full-calendar-dayname {
+        padding: 8px 4px !important;
+        font-size: 0.9em !important;
+    }
+
+    .tui-full-calendar-dayname-date {
+        font-size: 1em !important;
+        padding: 4px 6px !important;
+    }
+
+    .tui-full-calendar-dayname-name {
+        font-size: 0.75em !important;
+    }
+
+    /* 时间格子在移动端的优化 */
+    .tui-full-calendar-time-date {
+        min-height: 40px !important;
+        padding: 2px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    .tui-full-calendar-time-date-schedule-area {
+        min-height: 36px !important;
+        padding: 2px !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+    }
+
+    /* 滚动区域约束和滚动条隐藏 */
+    .tui-full-calendar-scrollable-area {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+    /* 强制隐藏所有可能的滚动条 */
+    .tui-full-calendar-weekday-schedule-area::-webkit-scrollbar,
+    .tui-full-calendar-time-date::-webkit-scrollbar,
+    .tui-full-calendar-time-date-schedule-area::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+    }
+}
+
+/* 移动端滚动条优化 */
+@media (max-width: 768px) {
+    /* 移动端滚动条更细，但保持可见性 */
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar {
+        width: 4px !important;
+        background-color: var(--progress-bg) !important;
+    }
+
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar-track {
+        background-color: var(--progress-bg) !important;
+        border-radius: 2px !important;
+    }
+
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb {
+        background-color: var(--border-color) !important;
+        border-radius: 2px !important;
+    }
+
+    .tui-full-calendar-scrollable-area::-webkit-scrollbar-thumb:hover {
+        background-color: var(--primary-color) !important;
+    }
+
+    .tui-full-calendar-scrollable-area {
+        scrollbar-width: thin !important;
+        scrollbar-color: var(--border-color) var(--progress-bg) !important;
+    }
+
+    /* 确保时间轴正常显示 */
+    .tui-full-calendar-timegrid-hour,
+    .tui-full-calendar-timegrid-half-hour,
+    .tui-full-calendar-timegrid-timezone {
+        display: block !important;
+        visibility: visible !important;
+    }
+}
+
+/* 横屏模式优化 */
+@media (max-width: 768px) and (orientation: landscape) {
+    .container {
+        min-height: calc(100vh - 60px);
+        padding: 10px 0 50px 0;
+    }
+
+    .card,
+    .card.calendar-section {
+        margin: 0 auto 12px auto;
+        padding: 10px;
+        width: calc(100vw - 40px);
+        max-width: calc(100vw - 40px);
+    }
+
+    #calendar {
+        height: 220px;
+        padding: 3px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    #timer-display {
+        font-size: 2.5em;
+        margin: 8px 0;
+    }
+
+    .timer-controls {
+        gap: 8px;
+    }
+
+    .timer-controls button {
+        padding: 8px 12px;
+        font-size: 0.85em;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    button, .task-item, .priority-btn, .calendar-nav button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .tui-full-calendar-time-schedule {
+        min-height: 44px;
+        padding: 12px 16px;
+        margin: 4px 0;
+    }
+
+    .tui-full-calendar-time-schedule:hover {
+        transform: none;
+        background-color: var(--card-bg);
+    }
+
+    .tui-full-calendar-time-schedule:active {
+        background-color: var(--progress-bg);
+        transform: scale(0.98);
+    }
+
+    .task-item:active {
+        transform: scale(0.98);
+    }
+
+    button:active {
+        transform: scale(0.95);
+    }
 }
