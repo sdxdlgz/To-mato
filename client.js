@@ -733,12 +733,7 @@ const applyLanguage = (lang) => {
     skipBtn.textContent = currentMode === 'work' ? t.skip : t.work;
     resetBtn.textContent = t.reset;
     setCalendarTitle();
-
-    if (isRunning) {
-        startPauseBtn.textContent = t.pause;
-    } else {
-        startPauseBtn.textContent = timeLeft === (currentMode === 'work' ? workDuration : breakDuration) ? t.start : t.resume;
-    }
+    updateDisplay();
 
     if (stopwatchRunning) {
         stopwatchStartBtn.textContent = t.pause;
