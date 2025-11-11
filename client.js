@@ -134,7 +134,7 @@ const updateDailyFocusDisplay = () => {
             totalFocusTime += currentSessionTime;
         }
 
-        dailyFocusTimeEl.textContent = formatFocusTime(totalFocusTime);
+        dailyFocusTimeEl.innerHTML = formatFocusTime(totalFocusTime);
     }
 };
 
@@ -435,8 +435,11 @@ const updateDisplay = () => {
     cycleCountEl.textContent = completedCycles;
     timerModeTitleEl.textContent = currentMode === 'work' ? t.focusTime : t.breakTime;
     skipBtn.textContent = currentMode === 'work' ? t.skip : t.work;
-    infoWorkEl.textContent = workDuration / 60;
-    infoBreakEl.textContent = breakDuration / 60;
+    const workMin = workDuration / 60;
+    const breakMin = breakDuration / 60;
+    document.querySelector('.timer-info').innerHTML = currentLang === 'zh'
+        ? `专注: <span id="info-work">${workMin}</span>分 | 休息: <span id="info-break">${breakMin}</span>分`
+        : `Focus: <span id="info-work">${workMin}</span>m | Break: <span id="info-break">${breakMin}</span>m`;
     updateDailyFocusDisplay();
 
     // 更新按钮状态
@@ -725,9 +728,11 @@ const applyLanguage = (lang) => {
     document.querySelector('label[for="target-title"]').textContent = t.targetName;
     document.querySelector('label[for="target-date"]').textContent = t.selectDate;
     document.getElementById('target-title').placeholder = t.targetPlaceholder;
+    document.getElementById('share-btn').textContent = currentLang === 'zh' ? '📤 分享成果' : '📤 Share';
 
     skipBtn.textContent = currentMode === 'work' ? t.skip : t.work;
     resetBtn.textContent = t.reset;
+    setCalendarTitle();
 
     if (isRunning) {
         startPauseBtn.textContent = t.pause;
@@ -923,7 +928,9 @@ const updateCalendarView = (view) => {
 const setCalendarTitle = () => {
     if (!calendar) return;
     const date = calendar.getDate();
-    const title = `${date.getFullYear()}年 ${date.getMonth() + 1}月 ${date.getDate()}日`;
+    const title = currentLang === 'zh'
+        ? `${date.getFullYear()}年 ${date.getMonth() + 1}月 ${date.getDate()}日`
+        : `${date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
     calendarTitle.textContent = title;
 };
 const addEventToCalendar = (task) => {
