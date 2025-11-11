@@ -700,6 +700,7 @@ const translations = {
 const applyLanguage = (lang) => {
     currentLang = lang;
     const t = translations[lang];
+    console.log('Applying language:', lang);
 
     document.querySelector('header h1').textContent = t.title;
     document.querySelector('header p').textContent = t.subtitle;
