@@ -706,7 +706,7 @@ const applyLanguage = (lang) => {
     document.querySelector('header p').textContent = t.subtitle;
     document.getElementById('timer-mode-title').textContent = currentMode === 'work' ? t.focusTime : t.breakTime;
     document.querySelector('.timer-status').innerHTML = `${t.completedCycles} <span id="cycle-count">${completedCycles}</span> ${t.cycles}`;
-    document.querySelector('.focus-time-status').childNodes[0].textContent = `${t.todayFocus} `;
+    document.getElementById('focus-time-label').textContent = t.todayFocus;
     document.getElementById('task-input').placeholder = t.taskPlaceholder;
     document.querySelector('.priority-options').childNodes[0].textContent = t.priority + ' ';
     document.querySelectorAll('.priority-btn')[0].textContent = t.low;
